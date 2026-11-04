@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<title>Mindcatch</title>
+<style>
+  :root { --bg:#101418; --card:#1a2027; --fg:#e8ecf1; --muted:#8b95a5; --accent:#7c6cff; --border:#262d38; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; max-width:640px; margin:0 auto; padding:20px; }
+  h1 { font-size:1.3rem; }
+  .sub { color:var(--muted); font-size:.8rem; margin-bottom:14px; }
+  input, button, select { font-size:1rem; border-radius:8px; border:1px solid var(--border); }
+  input { width:100%; background:var(--card); color:var(--fg); padding:14px; }
+  button { background:var(--accent); color:#fff; border:none; padding:10px 16px; cursor:pointer; }
+  button.ghost { background:var(--card); color:var(--fg); border:1px solid var(--border); }
+  .capture { display:flex; gap:8px; margin-bottom:16px; }
+  .capture input { flex:1; }
+  nav { display:flex; gap:6px; margin-bottom:14px; }
+  nav button { flex:1; font-size:.85rem; }
+  nav button.active { background:var(--accent); }
+  nav button:not(.active) { background:var(--card); color:var(--fg); }
+  .item { display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .item .type { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .item select { background:var(--bg); color:var(--fg); font-size:.75rem; padding:4px; }
+  .muted { color:var(--muted); font-size:.8rem; }
+  #focus.hidden { display:none; }
+  #focus { position:fixed; inset:0; background:var(--bg); z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px; }
+  #focusTimer { font-size:3rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .dropzone { border:2px dashed var(--border); border-radius:10px; padding:18px; text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:14px; }
+  .dropzone.over { border-color:var(--accent); color:var(--fg); }
+  kbd { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.75rem; }
+</style>
+</head>
+<body>
+<h1>Mindcatch</h1>
+<p class="sub">Одне поле — одна думка. <kbd>N</kbd> — новийcapture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export</p>
+
+<div class="dropzone" id="dropzone">Перетягніть скріншот сюди (OCR, якщо Tesseract встановлений)</div>
+
+<div class="capture">
+  <input id="captureInput" placeholder="Що тримаєте в голові? Enter — зберегти" autofocus>
+  <button onclick="doCapture()">↓</button>
+</div>
+
+<nav>
+  <button data-view="inbox" class="active">Inbox</button>
+  <button data-view="today">Today</button>
+  <button data-view="week">Week</button>
+  <button data-view="someday">Someday</button>
+  <button data-view="done">Done</button>
+</nav>
+
+<div id="list"></div>
+
+<div id="focus" class="hidden">
+  <div class="muted" id="focusTask"></div>
+  <div id="focusTimer">25:00</div>
+  <div style="display:flex;gap:10px">
+    <button id="focusBtn" onclick="focusAction()">Пауза</button>
+    <button class="ghost" onclick="closeFocus()">Закрити (Esc)</button>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

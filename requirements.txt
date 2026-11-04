@@ -1,0 +1,10 @@
+# Mindcatch runtime (localhost only)
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+
+# Optional: OCR of screenshots. Without these the app falls back to manual input.
+# pytesseract>=0.3.10  + system Tesseract binary required
+
+# Dev
+pytest>=8.0

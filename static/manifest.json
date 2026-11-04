@@ -1,0 +1,10 @@
+{
+  "name": "Mindcatch",
+  "short_name": "Mindcatch",
+  "description": "ADHD mental-load capture: one tap -> task, offline-first",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101418",
+  "theme_color": "#7c6cff",
+  "icons": []
+}
