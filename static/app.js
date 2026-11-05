@@ -333,6 +333,44 @@ function updateNotePreview() {
   }, 300);
 }
 
+// --- Onboarding tour: 3 tips on the first visit (localStorage) ---
+const TOUR_KEY = "mc_tour_done";
+const TOUR_STEPS = [
+  { sel: "#captureInput", title: "1. Вилов думок",
+    text: "Одне поле — одна думка. Введіть текст і натисніть Enter: дата («завтра 15:00»), тип і #теги розпізнаються самі." },
+  { sel: "nav", title: "2. Триаж без роздумів",
+    text: "Розкладіть по полицях: Inbox → Today → Week → Someday. На задачах: ↻ повторення, ⏱ таймер, ✓ виконано." },
+  { sel: ".sub", title: "3. Дані — ваші",
+    text: "Все зберігається локально. Експорт у один клік: JSON (клавіша E), календар (ICS) і Todoist/Markdown." },
+];
+let tourIdx = 0;
+
+function tourShow() {
+  const step = TOUR_STEPS[tourIdx];
+  document.querySelectorAll(".tour-hl").forEach(el => el.classList.remove("tour-hl"));
+  const target = document.querySelector(step.sel);
+  if (target) target.classList.add("tour-hl");
+  $("tourStep").textContent = `Крок ${tourIdx + 1} з ${TOUR_STEPS.length}`;
+  $("tourTitle").textContent = step.title;
+  $("tourText").textContent = step.text;
+  $("tourNext").textContent = tourIdx === TOUR_STEPS.length - 1 ? "Готово" : "Далі →";
+  $("tour").classList.remove("hidden");
+  $("tourNext").focus();
+}
+
+function tourEnd(done) {
+  document.querySelectorAll(".tour-hl").forEach(el => el.classList.remove("tour-hl"));
+  $("tour").classList.add("hidden");
+  if (done) localStorage.setItem(TOUR_KEY, "1");
+  $("captureInput").focus();
+}
+
+function maybeStartTour() {
+  if (!localStorage.getItem(TOUR_KEY)) { tourIdx = 0; tourShow(); }
+}
+$("tourNext").onclick = () => { tourIdx += 1; tourIdx < TOUR_STEPS.length ? tourShow() : tourEnd(true); };
+$("tourSkip").onclick = () => tourEnd(true);
+
 // --- PWA install prompt ---
 let deferredInstall = null;
 window.addEventListener("beforeinstallprompt", e => {
@@ -375,7 +413,10 @@ dz.addEventListener("drop", async e => {
 // --- Hotkeys ---
 $("noteBody").addEventListener("input", updateNotePreview);
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") { closeFocus(); closeNoteEditor(); return; }
+  if (e.key === "Escape") {
+    if (!$("tour").classList.contains("hidden")) { tourEnd(true); return; }
+    closeFocus(); closeNoteEditor(); return;
+  }
   const typing = document.activeElement && document.activeElement.tagName === "INPUT";
   if (e.key === "Enter" && document.activeElement === $("captureInput")) { doCapture(); return; }
   if (typing) return;
@@ -398,3 +439,4 @@ if ("serviceWorker" in navigator) {
 
 loadView();
 checkReminders();
+maybeStartTour();

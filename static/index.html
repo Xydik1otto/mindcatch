@@ -36,6 +36,12 @@
   #focus { position:fixed; inset:0; background:var(--bg); z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px; }
   #noteEditor { position:fixed; inset:0; background:var(--bg); z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; }
   #focusTimer { font-size:3rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  #tour.hidden { display:none; }
+  #tour { position:fixed; inset:0; background:rgba(8,10,14,.6); z-index:20; display:flex; align-items:flex-end; justify-content:center; padding:20px; }
+  .tourcard { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; max-width:440px; width:100%; }
+  .tourcard h3 { margin:6px 0; font-size:1.05rem; }
+  .tourcard p { font-size:.9rem; margin-bottom:12px; }
+  .tour-hl { outline:2px solid var(--accent) !important; outline-offset:3px; border-radius:8px; }
   .dropzone { border:2px dashed var(--border); border-radius:10px; padding:18px; text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:14px; }
   .dropzone.over { border-color:var(--accent); color:var(--fg); }
   kbd { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.75rem; }
@@ -94,6 +100,18 @@
   <div style="display:flex;gap:10px">
     <button id="focusBtn" onclick="focusAction()">Пауза</button>
     <button class="ghost" onclick="closeFocus()">Закрити (Esc)</button>
+  </div>
+</div>
+
+<div id="tour" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+  <div class="tourcard">
+    <div class="muted" id="tourStep"></div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="tourSkip" class="ghost" aria-label="Пропустити огляд">Пропустити</button>
+      <button id="tourNext" aria-label="Наступна підказка">Далі →</button>
+    </div>
   </div>
 </div>
 
