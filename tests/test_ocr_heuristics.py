@@ -143,3 +143,62 @@ def test_ocr_image_none_without_tesseract():
     if not ocr_available():
         # graceful fallback: returns None instead of raising
         assert ocr_extract.ocr_image(b"fake-bytes") is None
+
+
+# ---------------------------------------------------------------------------
+# Ukrainian heuristics (deepened v0.2/v0.3: imperatives, full weekdays,
+# relative time hints) — screenshots in Ukrainian must classify reliably.
+# ---------------------------------------------------------------------------
+
+class TestUkrainianHeuristics:
+    @pytest.mark.parametrize("text,expected", [
+        # imperatives -> task
+        ("Подзвони мамі після роботи", "task"),
+        ("Купи хліб і молоко", "task"),
+        ("Винеси сміття", "task"),
+        ("Перевір пошту о 10 год", "reminder"),
+        ("Запиши ідею в нотатки", "task"),
+        # full weekday names -> reminder
+        ("зустріч з командою у вівторок", "reminder"),
+        ("здати звіт у п'ятницю", "reminder"),
+        ("субота — батьківські збори", "reminder"),
+        # relative hints -> reminder
+        ("нагадай подзвонити через годину", "reminder"),
+        ("прибрати кухню ввечері", "reminder"),
+        ("оплата інтернету о 10 год", "reminder"),
+        # no date, no verb -> note
+        ("меблі на балконі якось треба розібрати", "task"),
+        ("дуже цікавий фільм про космос", "note"),
+    ])
+    def test_ua_classify(self, text, expected):
+        assert classify(text) == expected
+
+    def test_ua_apostrophe_variants_are_weekdays(self):
+        from app.logic.ocr_extract import looks_like_reminder
+        # straight ' (U+0027), modifier ʼ (U+02BC), typographic ’ (U+2019)
+        for mark in ("'", "\u02bc", "\u2019"):
+            assert looks_like_reminder(f"план на п{mark}ятницю")
+
+    def test_ua_screenshot_with_imperatives(self):
+        raw = """Нотатки з ранку
+- винеси сміття завтра
+- нагадай зателефонувати о 18:00
+новий сезон сериалу вихід у вересні
+- заплати за світло до 20.11
+"""
+        cands = extract_task_candidates(raw)
+        texts = [c["text"] for c in cands]
+        assert "винеси сміття завтра" in texts
+        assert "нагадай зателефонувати о 18:00" in texts
+        assert "заплати за світло до 20.11" in texts
+        assert not any("сериалу" in t for t in texts)
+
+    def test_full_weekday_scores_as_date_hint(self):
+        with_date, reasons = line_score("замовити торт у середу")
+        without, _ = line_score("замовити торт на святкування")
+        assert with_date > without
+        assert "contains date/time hint" in reasons
+
+    def test_english_unaffected(self):
+        assert classify("buy oat milk tomorrow") == "reminder"
+        assert classify("the monthly report looks fine") == "note"
