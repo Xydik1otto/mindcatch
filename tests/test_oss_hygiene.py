@@ -73,6 +73,8 @@ class TestNoSecrets:
         patterns = (r"ghp_[A-Za-z0-9]{20,}", r"github_pat_", r"sk-[A-Za-z0-9]{20,}",
                     r"(?i)api[_-]?key\s*[:=]\s*['\"][A-Za-z0-9]{16,}")
         for name in r.stdout.splitlines():
+            if name == "tests/test_oss_hygiene.py":  # scanner's own patterns
+                continue
             path = os.path.join(ROOT, name)
             if not os.path.isfile(path) or os.path.getsize(path) > 200_000:
                 continue
