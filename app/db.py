@@ -38,6 +38,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         "recurrence": "TEXT",
         "body": "TEXT",
         "estimate_minutes": "INTEGER",
+        "tags": "TEXT",
     }
     for name, decl in additions.items():
         if name not in cols:
@@ -64,11 +65,11 @@ def now_iso() -> str:
 
 def create_item(conn: sqlite3.Connection, text: str, type_: str,
                 remind_at: str | None = None, status: str = "inbox",
-                due_date: str | None = None) -> dict:
+                due_date: str | None = None, tags: str | None = None) -> dict:
     cur = conn.execute(
-        "INSERT INTO items (type, text, status, remind_at, due_date, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (type_, text, status, remind_at, due_date, now_iso(), now_iso()),
+        "INSERT INTO items (type, text, status, remind_at, due_date, tags, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (type_, text, status, remind_at, due_date, tags, now_iso(), now_iso()),
     )
     conn.commit()
     return get_item(conn, cur.lastrowid)

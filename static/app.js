@@ -4,6 +4,8 @@
 
 const $ = id => document.getElementById(id);
 let view = "inbox";
+let tagFilter = "";   // active tag chip ("" = all)
+let editingTags = null; // item id whose inline tag editor is open
 let focusTimer = null;
 let focusItem = null;
 let focusState = null; // {phase, remaining, running}
@@ -59,9 +61,33 @@ async function checkReminders() {
 setInterval(checkReminders, 60 * 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
+// --- Tags: filter chips + history hints + inline editor ---
+async function loadTagChips() {
+  const sug = await api("/api/tags").catch(() => []);
+  const box = $("tagChips"), dl = $("tagDatalist");
+  box.innerHTML = ""; dl.innerHTML = "";
+  const mk = (label, tag, active) => {
+    const c = document.createElement("button");
+    c.className = "chip" + (active ? " active" : "");
+    c.textContent = label;
+    c.onclick = () => { tagFilter = active ? "" : tag; loadView(); };
+    box.appendChild(c);
+  };
+  mk("все", "", !tagFilter);
+  for (const s of sug) {
+    mk(`#${s.tag} (${s.count})`, s.tag, tagFilter === s.tag);
+    const o = document.createElement("option"); o.value = s.tag; dl.appendChild(o);
+  }
+  box.style.display = sug.length ? "flex" : "none";
+}
+
+function tagList(item) { return (item.tags || "").split(",").filter(Boolean); }
+
 async function loadView() {
   if (view === "review") return loadReview();
-  const items = await api("/api/items?status=" + view);
+  await loadTagChips();
+  const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
+  const items = await api("/api/items?status=" + view + tagQ);
   const el = $("list");
   if (!items.length) { el.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
   el.innerHTML = "";
@@ -69,7 +95,7 @@ async function loadView() {
     const div = document.createElement("div");
     div.className = "item";
     const statuses = ["inbox", "today", "week", "someday", "done"];
-    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + (it.recurrence === "daily" ? "щоденна" : "щотижнева") : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
+    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + (it.recurrence === "daily" ? "щоденна" : "щотижнева") : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t => "#" + escapeHtml(t)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
     right.style.cssText = "display:flex;gap:6px;align-items:center";
     const rec = document.createElement("button");
@@ -103,6 +129,10 @@ async function loadView() {
       nb.onclick = () => openNoteEditor(it);
       right.appendChild(nb);
     }
+    const tb = document.createElement("button");
+    tb.className = "ghost"; tb.textContent = "🏷"; tb.title = "Теги/проєкт (підказки з історії)";
+    tb.onclick = () => { editingTags = editingTags === it.id ? null : it.id; loadView(); };
+    right.appendChild(tb);
     const sel = document.createElement("select");
     for (const s of statuses) {
       const o = document.createElement("option"); o.value = s; o.textContent = s;
@@ -118,6 +148,21 @@ async function loadView() {
       fb.onclick = () => openFocus(it); right.appendChild(fb);
     }
     div.appendChild(right);
+    if (editingTags === it.id) {
+      div.style.flexWrap = "wrap";
+      const ed = document.createElement("div");
+      ed.className = "tagedit";
+      ed.innerHTML = `<input id="tagInput" list="tagDatalist" placeholder="теги/проєкти через кому" value="${escapeHtml(it.tags || "")}">`;
+      const save = document.createElement("button"); save.textContent = "OK"; save.title = "Зберегти теги";
+      save.onclick = async () => {
+        await api(`/api/items/${it.id}/tags`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tags: $("tagInput").value }) });
+        editingTags = null; loadView();
+      };
+      const cancel = document.createElement("button"); cancel.className = "ghost"; cancel.textContent = "✕";
+      cancel.onclick = () => { editingTags = null; loadView(); };
+      ed.appendChild(save); ed.appendChild(cancel);
+      div.appendChild(ed);
+    }
     el.appendChild(div);
   }
 }

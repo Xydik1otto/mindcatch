@@ -14,7 +14,7 @@ from .db import (create_item, export_all, get_conn, get_item, init_db,
                  list_items, start_timer, stop_timer, timer_state,
                  update_fields, update_status)
 from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
-                    review, time_tracker, triage)
+                    review, tags, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -35,6 +35,11 @@ DbDep = Depends(get_db)
 
 class CaptureIn(BaseModel):
     text: str
+    tags: list[str] | None = None
+
+
+class TagsIn(BaseModel):
+    tags: list[str] | str = []
 
 
 class MoveIn(BaseModel):
@@ -59,22 +64,46 @@ class EstimateIn(BaseModel):
 
 @app.post("/api/capture")
 def capture(body: CaptureIn, db=DbDep):
+    return _capture(body, db)
+
+
+def _capture(body: CaptureIn, db) -> dict:
     text = body.text.strip()
     if not text:
         raise HTTPException(400, "text is empty")
-    type_ = ocr_extract.classify(text)
-    parsed = date_parser.parse(text)
+    clean_text, hashtag_tags = tags.extract_hashtags(text)
+    type_ = ocr_extract.classify(clean_text)
+    parsed = date_parser.parse(clean_text)
     remind_at = parsed.remind_at if parsed else None
     due_date = parsed.due_date if parsed else None
-    item = create_item(db, text, type_, remind_at, due_date=due_date)
+    merged = tags.normalize((body.tags or []) + hashtag_tags)
+    item = create_item(db, clean_text, type_, remind_at, due_date=due_date,
+                       tags=tags.join_tags(merged))
     return item
 
 
+@app.put("/api/items/{item_id}/tags")
+def set_tags(item_id: int, body: TagsIn, db=DbDep):
+    """Replace the tag list (empty list clears)."""
+    if get_item(db, item_id) is None:
+        raise HTTPException(404, "item not found")
+    return update_fields(db, item_id, tags=tags.join_tags(body.tags))
+
+
+@app.get("/api/tags")
+def tag_suggestions(db=DbDep):
+    """History hints: distinct tags with usage counts, most-used first."""
+    return tags.suggest(list_items(db))
+
+
 @app.get("/api/items")
-def items(status: str | None = None, db=DbDep):
+def items(status: str | None = None, tag: str | None = None, db=DbDep):
     if status and status not in triage.STATUSES:
         raise HTTPException(400, f"unknown status: {status}")
-    return list_items(db, status)
+    result = list_items(db, status)
+    if tag:
+        result = [i for i in result if tags.matches(i, tag)]
+    return result
 
 
 @app.get("/api/inbox")

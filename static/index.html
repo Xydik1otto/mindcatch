@@ -32,6 +32,11 @@
   .dropzone { border:2px dashed var(--border); border-radius:10px; padding:18px; text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:14px; }
   .dropzone.over { border-color:var(--accent); color:var(--fg); }
   kbd { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.75rem; }
+  .chip { background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:999px; padding:3px 10px; font-size:.75rem; cursor:pointer; }
+  .chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tagbtn { background:none; border:none; color:var(--accent); cursor:pointer; font-size:.75rem; padding:0; }
+  .tagedit { display:flex; gap:6px; margin-top:6px; width:100%; }
+  .tagedit input { flex:1; padding:6px; font-size:.8rem; }
 </style>
 </head>
 <body>
@@ -55,6 +60,9 @@
 </nav>
 
 <div id="digest" class="muted" style="margin-bottom:10px"></div>
+
+<div id="tagChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+<datalist id="tagDatalist"></datalist>
 
 <div id="list"></div>
 
