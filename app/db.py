@@ -154,6 +154,10 @@ def timer_state(conn: sqlite3.Connection, item_id: int) -> dict:
     }
 
 
+def all_time_logs(conn: sqlite3.Connection) -> list[dict]:
+    return [dict(r) for r in conn.execute("SELECT * FROM time_logs ORDER BY id").fetchall()]
+
+
 def update_status(conn: sqlite3.Connection, item_id: int, status: str) -> dict | None:
     conn.execute("UPDATE items SET status = ?, updated_at = ? WHERE id = ?",
                  (status, now_iso(), item_id))

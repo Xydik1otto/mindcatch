@@ -10,11 +10,11 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .db import (create_item, export_all, get_conn, get_item, init_db,
-                 list_items, search_items, start_timer, stop_timer,
+from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
+                 init_db, list_items, search_items, start_timer, stop_timer,
                  timer_state, update_fields, update_status)
-from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
-                    review, tags, time_tracker, triage)
+from .logic import (date_parser, digest, focus_stats, markdown, ocr_extract,
+                    recurring, review, tags, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -275,6 +275,18 @@ async def ocr(file: UploadFile = File(...)):
 @app.get("/api/ocr-status")
 def ocr_status():
     return {"ocr_available": ocr_extract.ocr_available()}
+
+
+@app.get("/api/stats/focus")
+def focus_stats_api(days: int = 7, db=DbDep):
+    """Focus minutes per day (last N days) + SVG bar chart."""
+    days = max(1, min(days, 90))
+    bars = focus_stats.minutes_by_day(all_time_logs(db), days)
+    return {
+        "days": bars,
+        "total_minutes": focus_stats.total_minutes(bars),
+        "svg": focus_stats.bar_chart_svg(bars),
+    }
 
 
 @app.get("/api/review/weekly")

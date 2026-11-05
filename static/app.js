@@ -85,6 +85,7 @@ function tagList(item) { return (item.tags || "").split(",").filter(Boolean); }
 
 async function loadView() {
   if (view === "review") return loadReview();
+  if (view === "stats") return loadStats();
   await loadTagChips();
   const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
   const items = await api("/api/items?status=" + view + tagQ);
@@ -227,6 +228,17 @@ async function loadSearch(q) {
   if (!items.length) { el.innerHTML = "<p class='muted'>Нічого не знайдено.</p>"; return; }
   el.innerHTML = `<p class="muted">Знайдено ${items.length} за запитом «${escapeHtml(q)}»:</p>`;
   renderItems(items, el);
+}
+
+// --- Focus statistics (SVG bar chart from /api/stats/focus) ---
+async function loadStats() {
+  $("tagChips").style.display = "none";
+  const s = await api("/api/stats/focus?days=7");
+  const h = Math.round(s.total_minutes / 60);
+  $("list").innerHTML =
+    `<h3 style="margin:6px 0 10px">📊 Фокус за 7 днів: ${s.total_minutes} хв${h ? ` (~${h} год)` : ""}</h3>` +
+    s.svg +
+    `<p class="muted" style="margin-top:8px">Хвилини закритих фокус-сесій (pomodoro/таймер) по днях. Запущений таймер врахується, коли зупините.</p>`;
 }
 
 // --- Focus mode (pomodoro 25/5) ---
