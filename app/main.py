@@ -14,7 +14,7 @@ from .db import (create_item, export_all, get_conn, get_item, init_db,
                  list_items, start_timer, stop_timer, timer_state,
                  update_fields, update_status)
 from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
-                    time_tracker, triage)
+                    review, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -224,6 +224,12 @@ async def ocr(file: UploadFile = File(...)):
 @app.get("/api/ocr-status")
 def ocr_status():
     return {"ocr_available": ocr_extract.ocr_available()}
+
+
+@app.get("/api/review/weekly")
+def weekly_review_api(db=DbDep):
+    """Weekly review: what was done this week, what carried over."""
+    return review.weekly_review(list_items(db))
 
 
 @app.get("/api/export")

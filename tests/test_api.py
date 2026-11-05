@@ -52,6 +52,20 @@ class TestDigest:
         assert d["tasks"] >= 1
 
 
+    def test_review_shape(self, client):
+        r = client.get("/api/review/weekly").json()
+        assert set(r) >= {"week_start", "today", "done_this_week", "carried_over", "counts"}
+
+    def test_review_done_this_week(self, client):
+        item = client.post("/api/capture", json={"text": "закрити таску"}).json()
+        client.post(f"/api/items/{item['id']}/complete")
+        r = client.get("/api/review/weekly").json()
+        assert r["counts"]["done"] == 1
+
+    def test_review_endpoint(self, client):
+        assert client.get("/api/review/weekly").status_code == 200
+
+
 class TestTimeTracker:
     def test_estimate_set_and_get(self, client):
         item = client.post("/api/capture", json={"text": "написати звіт"}).json()

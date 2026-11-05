@@ -60,6 +60,7 @@ setInterval(checkReminders, 60 * 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
 async function loadView() {
+  if (view === "review") return loadReview();
   const items = await api("/api/items?status=" + view);
   const el = $("list");
   if (!items.length) { el.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
@@ -122,6 +123,30 @@ async function loadView() {
 }
 
 function escapeHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// --- Weekly review view ---
+async function loadReview() {
+  const r = await api("/api/review/weekly");
+  const el = $("list");
+  el.innerHTML = `
+    <p class="muted">Тиждень ${r.week_start} … ${r.today}: виконано ${r.counts.done}, перенеслось ${r.counts.carried}, створено ${r.counts.created_this_week}</p>
+    <h3 style="margin:10px 0 6px">✅ Зроблено цього тижня (${r.counts.done})</h3>
+    <div id="reviewDone"></div>
+    <h3 style="margin:10px 0 6px">⏳ Перенеслось (${r.counts.carried})</h3>
+    <div id="reviewCarried"></div>`;
+  const fill = (container, arr) => {
+    const box = $(container);
+    if (!arr.length) { box.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
+    for (const it of arr) {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `<div><div class="type">${it.type}</div><div>${escapeHtml(it.text)}</div></div>`;
+      box.appendChild(div);
+    }
+  };
+  fill("reviewDone", r.done_this_week);
+  fill("reviewCarried", r.carried_over);
+}
 
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
