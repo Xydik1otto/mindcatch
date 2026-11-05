@@ -126,6 +126,7 @@ function tagList(item) { return (item.tags || "").split(",").filter(Boolean); }
 async function loadView() {
   if (view === "review") return loadReview();
   if (view === "stats") return loadStats();
+  if (view === "morning") return loadMorning();
   await loadTagChips();
   const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
   const items = await api("/api/items?status=" + view + tagQ);
@@ -241,6 +242,33 @@ function recName(r) {
   if (r === "weekdays") return t("rec_weekdays");
   if (r && r.startsWith("every:")) return t("rec_every", { n: r.slice(6) });
   return r;
+}
+
+// --- Morning warm-up templates (roadmap v0.3: «шаблони ранкової розгінки») ---
+async function loadMorning() {
+  $("tagChips").style.display = "none";
+  const tpls = await api("/api/morning/templates");
+  const el = $("list");
+  el.innerHTML = `<h3 style="margin:6px 0 10px">${t("morning_head")}</h3>` +
+    `<p class="muted" style="margin-bottom:10px">${t("morning_note")}</p>`;
+  for (const tpl of tpls) {
+    const name = LANG === "en" ? tpl.name_en : tpl.name_ua;
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<div><div class="type">${t("morning_tpl")} · ${t("morning_steps", { n: tpl.steps })}</div><div>${escapeHtml(name)}</div></div>`;
+    const btn = document.createElement("button");
+    btn.textContent = t("morning_apply");
+    btn.setAttribute("aria-label", t("morning_apply_aria", { name }));
+    btn.onclick = async () => {
+      try {
+        const r = await api("/api/morning/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ template_id: tpl.id }) });
+        alert(t("morning_applied", { n: r.items.length }));
+        document.querySelector("nav button[data-view=today]").click();
+      } catch (e) { alert(e.message); }
+    };
+    div.appendChild(btn);
+    el.appendChild(div);
+  }
 }
 
 // --- Weekly review view ---

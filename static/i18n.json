@@ -53,7 +53,14 @@
     "tour2_text": "Розкладіть по полицях: Inbox → Today → Week → Someday. На задачах: ↻ повторення, ⏱ таймер, ✓ виконано.",
     "tour3_title": "3. Дані — ваші",
     "tour3_text": "Все зберігається локально. Експорт у один клік: JSON (клавіша E), календар (ICS) і Todoist/Markdown.",
-    "lang_btn_aria": "Змінити мову інтерфейсу"
+    "lang_btn_aria": "Змінити мову інтерфейсу",
+    "morning_head": "☀ Шаблони ранкової розгінки",
+    "morning_note": "Один дотик — і Today наповнений готовими кроками ранку. Можна застосовувати щоразу заново.",
+    "morning_tpl": "шаблон",
+    "morning_steps": "{n} кроків",
+    "morning_apply": "Застосувати → Today",
+    "morning_apply_aria": "Застосувати шаблон «{name}»",
+    "morning_applied": "Додано {n} задач у Today"
   },
   "en": {
     "sub": "One field — one thought. <kbd>N</kbd> — new capture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export",
@@ -109,6 +116,13 @@
     "tour2_text": "Sort into buckets: Inbox → Today → Week → Someday. On each task: ↻ repeat, ⏱ timer, ✓ complete.",
     "tour3_title": "3. Your data stays yours",
     "tour3_text": "Everything is stored locally. One-click export: JSON (key E), calendar (ICS) and Todoist/Markdown.",
-    "lang_btn_aria": "Change interface language"
+    "lang_btn_aria": "Change interface language",
+    "morning_head": "☀ Morning warm-up templates",
+    "morning_note": "One tap fills Today with ready-made morning steps. Re-apply any time after a rough start.",
+    "morning_tpl": "template",
+    "morning_steps": "{n} steps",
+    "morning_apply": "Apply → Today",
+    "morning_apply_aria": "Apply template “{name}”",
+    "morning_applied": "Added {n} tasks to Today"
   }
 }

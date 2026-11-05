@@ -14,8 +14,8 @@ from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
                  init_db, list_items, search_items, start_timer, stop_timer,
                  timer_state, update_fields, update_status)
 from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
-                    markdown, ocr_extract, recurring, review, tags,
-                    task_export, time_tracker, triage)
+                    markdown, morning_templates, ocr_extract, recurring,
+                    review, tags, task_export, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -57,6 +57,10 @@ class BodyIn(BaseModel):
 
 class EstimateIn(BaseModel):
     minutes: int | None
+
+
+class MorningApplyIn(BaseModel):
+    template_id: str
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +280,24 @@ async def ocr(file: UploadFile = File(...)):
 @app.get("/api/ocr-status")
 def ocr_status():
     return {"ocr_available": ocr_extract.ocr_available()}
+
+
+@app.get("/api/morning/templates")
+def morning_list():
+    """Morning warm-up templates (roadmap v0.3) — ready-made task sets."""
+    return morning_templates.list_templates()
+
+
+@app.post("/api/morning/apply")
+def morning_apply(body: MorningApplyIn, db=DbDep):
+    """Seed Today with the steps of a morning template (idempotent-free:
+    every call appends a fresh set so it can be re-run after a bad day)."""
+    steps = morning_templates.template_steps(body.template_id)
+    if steps is None:
+        raise HTTPException(400, f"unknown template: {body.template_id}")
+    created = [create_item(db, s["text"], s["type"], status="today")
+               for s in steps]
+    return {"template_id": body.template_id, "items": created}
 
 
 @app.get("/api/stats/focus")
