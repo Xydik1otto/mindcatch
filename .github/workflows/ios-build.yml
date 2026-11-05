@@ -1,0 +1,61 @@
+name: ios-build
+
+# Unsigned .app (zip) на кожен push — артефакт для AltStore/Sideloadly.
+# IPA-упаковка пропущена: без сертифіката Apple Developer ($99/рік).
+# Встановлення: AltStore/Sideloadly пер-signed .app при установці (7 днів).
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Sync Capacitor web assets
+        run: npx cap sync ios
+
+      - name: Install CocoaPods dependencies
+        run: pod install --project-directory=ios/App
+
+      - name: Build unsigned .app (device)
+        run: >
+          xcodebuild build
+          -workspace ios/App/App.xcworkspace
+          -scheme App
+          -configuration Debug
+          -sdk iphoneos
+          -destination 'generic/platform=iOS'
+          -derivedDataPath ios/build
+          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGN_IDENTITY=""
+
+      - name: Zip .app for AltStore/Sideloadly
+        run: |
+          cd ios/build/Build/Products/Debug-iphoneos
+          zip -qry Mindcatch.app.zip Mindcatch.app
+
+      - name: Upload .app zip artifact (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindcatch-ios-unsigned
+          path: ios/build/Build/Products/Debug-iphoneos/Mindcatch.app.zip
+          retention-days: 30
+
+      - name: Attach zip to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ios/build/Build/Products/Debug-iphoneos/Mindcatch.app.zip

@@ -1,0 +1,48 @@
+name: android-build
+
+# Збірка debug-APK на кожен push; attach до Release на тег (v*).
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Sync Capacitor web assets
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: bash gradlew assembleDebug
+        working-directory: android
+
+      - name: Upload APK artifact (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindcatch-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Attach APK to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/debug/*.apk
