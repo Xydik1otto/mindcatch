@@ -20,7 +20,44 @@ async function doCapture() {
   await api("/api/capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
   $("captureInput").value = "";
   loadView();
+  ensureNotificationPermission(); // ask once, on the first capture gesture
 }
+
+// --- Local web notifications (reminders due today) ---
+let notifiedToday = new Set(JSON.parse(localStorage.getItem("notifiedIds") || "[]"));
+let notifiedDay = localStorage.getItem("notifiedDay") || "";
+
+function ensureNotificationPermission() {
+  if (!("Notification" in window) || Notification.permission === "default") {
+    try { Notification.requestPermission(); } catch (e) { /* Safari */ }
+  }
+}
+
+function notify(body) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  try { new Notification("Mindcatch", { body }); } catch (e) {}
+}
+
+async function checkReminders() {
+  try {
+    const d = await api("/api/digest");
+    // digest line
+    const el = $("digest");
+    if (el) el.textContent = `Сьогодні: ${d.tasks} задач, ${d.reminders} нагадувань`;
+    // reset the notified set on a new day
+    if (notifiedDay !== d.date) { notifiedDay = d.date; notifiedToday = new Set(); }
+    for (const it of d.due_today) {
+      if (notifiedToday.has(it.id)) continue;
+      notifiedToday.add(it.id);
+      notify(it.text);
+    }
+    localStorage.setItem("notifiedIds", JSON.stringify([...notifiedToday]));
+    localStorage.setItem("notifiedDay", notifiedDay);
+  } catch (e) { /* offline: SW shell still works */ }
+}
+
+setInterval(checkReminders, 60 * 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
 async function loadView() {
   const items = await api("/api/items?status=" + view);
@@ -136,3 +173,4 @@ document.addEventListener("keydown", e => {
 });
 
 loadView();
+checkReminders();

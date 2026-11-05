@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from .db import (create_item, export_all, get_conn, get_item, init_db,
                  list_items, update_status)
-from .logic import ocr_extract, triage
+from .logic import date_parser, digest, ocr_extract, triage
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -49,8 +49,10 @@ def capture(body: CaptureIn, db=DbDep):
     if not text:
         raise HTTPException(400, "text is empty")
     type_ = ocr_extract.classify(text)
-    remind_at = None  # future: parse the date hint into an ISO timestamp
-    item = create_item(db, text, type_, remind_at)
+    parsed = date_parser.parse(text)
+    remind_at = parsed.remind_at if parsed else None
+    due_date = parsed.due_date if parsed else None
+    item = create_item(db, text, type_, remind_at, due_date=due_date)
     return item
 
 
@@ -69,6 +71,14 @@ def inbox(db=DbDep):
 @app.get("/api/today")
 def today(db=DbDep):
     return list_items(db, "today")
+
+
+@app.get("/api/digest")
+def daily_digest(db=DbDep):
+    """'Сьогодні: N задач, M нагадувань' for the Today view + notifications."""
+    items = list_items(db)
+    counts = digest.digest_counts(items)
+    return {**counts, "due_today": digest.due_today(items)}
 
 
 @app.post("/api/items/{item_id}/move")

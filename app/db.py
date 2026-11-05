@@ -30,9 +30,32 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Add columns introduced after the MVP schema to existing databases."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(items)").fetchall()}
+    additions = {
+        "due_date": "TEXT",
+        "recurrence": "TEXT",
+        "body": "TEXT",
+        "estimate_minutes": "INTEGER",
+    }
+    for name, decl in additions.items():
+        if name not in cols:
+            conn.execute(f"ALTER TABLE items ADD COLUMN {name} {decl}")
+    conn.execute("""CREATE TABLE IF NOT EXISTS time_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL REFERENCES items(id),
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        minutes INTEGER
+    )""")
+    conn.commit()
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     conn.commit()
+    _migrate(conn)
 
 
 def now_iso() -> str:
@@ -40,11 +63,12 @@ def now_iso() -> str:
 
 
 def create_item(conn: sqlite3.Connection, text: str, type_: str,
-                remind_at: str | None = None, status: str = "inbox") -> dict:
+                remind_at: str | None = None, status: str = "inbox",
+                due_date: str | None = None) -> dict:
     cur = conn.execute(
-        "INSERT INTO items (type, text, status, remind_at, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (type_, text, status, remind_at, now_iso(), now_iso()),
+        "INSERT INTO items (type, text, status, remind_at, due_date, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (type_, text, status, remind_at, due_date, now_iso(), now_iso()),
     )
     conn.commit()
     return get_item(conn, cur.lastrowid)
