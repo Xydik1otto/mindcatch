@@ -67,6 +67,16 @@ def capture(body: CaptureIn, db=DbDep):
     return _capture(body, db)
 
 
+@app.post("/api/quick")
+def quick_capture(body: CaptureIn, db=DbDep):
+    """Headless capture for curl / launchers / shortcuts — same pipeline, no UI.
+
+    Example: curl -s http://localhost:8000/api/quick \\
+      -H 'Content-Type: application/json' -d '{"text":"подзвонити мамі завтра 15:00"}'
+    """
+    return _capture(body, db)
+
+
 def _capture(body: CaptureIn, db) -> dict:
     text = body.text.strip()
     if not text:

@@ -44,6 +44,25 @@ python -m uvicorn app.main:app --reload --port 8000
 python -m pytest tests/ -v
 ```
 
+## Quick capture з командного рядка
+
+Сервер приймає думки і без UI — `POST /api/quick`, зручний для curl, Alfred/Raycast-style лаунчерів і ярликів:
+
+```bash
+curl -s http://localhost:8000/api/quick \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"подзвонити мамі завтра 15:00 #сімʼя"}'
+```
+
+Приклад аліасу (додайте у `~/.bashrc` або PowerShell `$PROFILE`):
+
+```bash
+mc() { curl -s http://localhost:8000/api/quick -H 'Content-Type: application/json' -d "{\"text\":\"$*\"}"; }
+# тепер у терміналі:  mc передзвонити в банк завтра #фінанси
+```
+
+Дата парситься так само, як в UI («завтра», «next monday», «31.12»), `#теги` чіпляються автоматично.
+
 OCR (опційно): встановіть Tesseract (https://github.com/UB-Mannheim/tesseract/wiki) та `pip install pytesseract pillow` — імпорт скріншотів запрацює сам; без нього — ручний ввід.
 
 ## Встановлення як PWA
