@@ -161,6 +161,7 @@ function renderItems(items, el) {
     right.appendChild(rec);
     const tm = document.createElement("button");
     tm.className = "ghost"; tm.textContent = "⏱"; tm.title = t("timer_title");
+    tm.setAttribute("aria-label", t("timer_title"));
     tm.onclick = async () => {
       try {
         const r = await api(`/api/items/${it.id}/timer/${tm.dataset.running ? "stop" : "start"}`, { method: "POST" });
@@ -172,19 +173,23 @@ function renderItems(items, el) {
     right.appendChild(tm);
     const cb = document.createElement("button");
     cb.className = "ghost"; cb.textContent = "✓"; cb.title = t("done_title");
+    cb.setAttribute("aria-label", t("done_title"));
     cb.onclick = async () => { await api(`/api/items/${it.id}/complete`, { method: "POST" }); loadView(); };
     right.appendChild(cb);
     if (it.type === "note") {
       const nb = document.createElement("button");
       nb.className = "ghost"; nb.textContent = "📝"; nb.title = t("note_btn_title");
+      nb.setAttribute("aria-label", t("note_btn_title"));
       nb.onclick = () => openNoteEditor(it);
       right.appendChild(nb);
     }
     const tb = document.createElement("button");
     tb.className = "ghost"; tb.textContent = "🏷"; tb.title = t("tags_title");
+    tb.setAttribute("aria-label", t("tags_title"));
     tb.onclick = () => { editingTags = editingTags === it.id ? null : it.id; loadView(); };
     right.appendChild(tb);
     const sel = document.createElement("select");
+    sel.setAttribute("aria-label", t("move_status_aria"));
     for (const s of statuses) {
       const o = document.createElement("option"); o.value = s; o.textContent = s;
       if (s === it.status) o.selected = true; sel.appendChild(o);

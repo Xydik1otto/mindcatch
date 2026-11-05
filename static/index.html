@@ -45,6 +45,11 @@
   .dropzone { border:2px dashed var(--border); border-radius:10px; padding:18px; text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:14px; }
   .dropzone.over { border-color:var(--accent); color:var(--fg); }
   kbd { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:.75rem; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .skip { position:absolute; left:-9999px; top:0; background:var(--accent); color:#fff; padding:8px 14px; border-radius:0 0 8px 0; z-index:30; }
+  .skip:focus { left:0; }
+  .exports a { color:var(--accent); }
+  a { color:var(--accent); }
   .chip { background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:999px; padding:3px 10px; font-size:.75rem; cursor:pointer; }
   .chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .tagbtn { background:none; border:none; color:var(--accent); cursor:pointer; font-size:.75rem; padding:0; }
@@ -53,17 +58,18 @@
 </style>
 </head>
 <body>
-<h1>Mindcatch <button id="langBtn" class="ghost" style="font-size:.75rem;padding:6px 10px;vertical-align:middle" aria-label="Змінити мову інтерфейсу">EN</button> <button id="installBtn" class="ghost" style="display:none;font-size:.75rem;padding:6px 10px;vertical-align:middle" onclick="installApp()">⬇ Встановити застосунок</button></h1>
+<a class="skip" href="#list">Перейти до списку задач</a>
+<h1>Mindcatch <button id="langBtn" class="ghost" style="font-size:.75rem;padding:6px 10px;vertical-align:middle" aria-label="Змінити мову інтерфейсу">EN</button> <button id="installBtn" class="ghost" style="display:none;font-size:.75rem;padding:6px 10px;vertical-align:middle" aria-label="Встановити застосунок" onclick="installApp()">⬇ Встановити застосунок</button></h1>
 <p class="sub" id="subline">Одне поле — одна думка. <kbd>N</kbd> — новий capture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export</p>
 
 <div class="dropzone" id="dropzone">Перетягніть скріншот сюди (OCR, якщо Tesseract встановлений)</div>
 
 <div class="capture">
-  <input id="captureInput" placeholder="Що тримаєте в голові? Enter — зберегти" autofocus>
-  <button onclick="doCapture()">↓</button>
+  <input id="captureInput" placeholder="Що тримаєте в голові? Enter — зберегти" aria-label="Поле швидкого capture" autofocus>
+  <button onclick="doCapture()" aria-label="Зберегти capture">↓</button>
 </div>
 
-<input id="searchInput" placeholder="🔍 Пошук у всіх задачах і нотатках (архів включно)…" style="margin-bottom:14px">
+<input id="searchInput" placeholder="🔍 Пошук у всіх задачах і нотатках (архів включно)…" aria-label="Пошук" style="margin-bottom:14px">
 
 <nav>
   <button data-view="inbox" class="active">Inbox</button>
@@ -91,7 +97,7 @@
 
 <div id="list"></div>
 
-<div id="noteEditor" class="hidden">
+<div id="noteEditor" class="hidden" role="dialog" aria-modal="true" aria-label="Редактор нотатки">
   <div class="muted" id="noteTitle"></div>
   <div style="display:flex;gap:10px;width:100%;max-width:640px;height:60vh">
     <textarea id="noteBody" style="flex:1;background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;resize:none"></textarea>
@@ -103,7 +109,7 @@
   </div>
 </div>
 
-<div id="focus" class="hidden">
+<div id="focus" class="hidden" role="dialog" aria-modal="true" aria-label="Режим фокусу (pomodoro)">
   <div class="muted" id="focusTask"></div>
   <div id="focusTimer">25:00</div>
   <div style="display:flex;gap:10px">
