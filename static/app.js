@@ -140,6 +140,7 @@ function renderItems(items, el) {
   for (const it of items) {
     const div = document.createElement("div");
     div.className = "item";
+    div.dataset.id = it.id;
     const statuses = ["inbox", "today", "week", "someday", "done"];
     div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + recName(it.recurrence) : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " " + t("min_short") : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t2 => "#" + escapeHtml(t2)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
@@ -223,6 +224,34 @@ function renderItems(items, el) {
       div.appendChild(ed);
     }
     el.appendChild(div);
+  }
+  if (view === "today" && items.length > 1) enableDragReorder(el);
+}
+
+// --- Drag-reorder in Today (manual order persisted via /api/today/reorder) ---
+function enableDragReorder(el) {
+  let dragId = null;
+  for (const div of el.children) {
+    div.draggable = true;
+    div.style.cursor = "grab";
+    div.addEventListener("dragstart", e => {
+      dragId = div.dataset.id;
+      e.dataTransfer.setData("text/plain", dragId);
+      e.dataTransfer.effectAllowed = "move";
+      div.style.opacity = ".4";
+    });
+    div.addEventListener("dragend", () => { div.style.opacity = ""; });
+    div.addEventListener("dragover", e => e.preventDefault());
+    div.addEventListener("drop", async e => {
+      e.preventDefault();
+      const dragged = el.querySelector(`[data-id="${CSS.escape(dragId)}"]`);
+      dragId = null;
+      if (!dragged || dragged === div) return;
+      el.insertBefore(dragged, div);
+      const order = [...el.children].map(c => parseInt(c.dataset.id, 10)).filter(n => !isNaN(n));
+      try { await api("/api/today/reorder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order }) }); }
+      catch (err) { loadView(); }
+    });
   }
 }
 

@@ -11,8 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
-                 init_db, list_items, search_items, start_timer, stop_timer,
-                 timer_state, update_fields, update_status)
+                 init_db, list_items, reorder_items, search_items,
+                 start_timer, stop_timer, timer_state, update_fields,
+                 update_status)
 from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
                     markdown, morning_templates, ocr_extract, recurring,
                     review, tags, task_export, time_tracker, triage)
@@ -61,6 +62,10 @@ class EstimateIn(BaseModel):
 
 class MorningApplyIn(BaseModel):
     template_id: str
+
+
+class ReorderIn(BaseModel):
+    order: list[int]
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +133,19 @@ def inbox(db=DbDep):
 
 @app.get("/api/today")
 def today(db=DbDep):
+    return list_items(db, "today")
+
+
+@app.post("/api/today/reorder")
+def today_reorder(body: ReorderIn, db=DbDep):
+    """Persist a manual Today order (drag-reorder in the UI)."""
+    today_ids = {i["id"] for i in list_items(db, "today")}
+    if len(set(body.order)) != len(body.order):
+        raise HTTPException(400, "duplicate ids in order")
+    for item_id in body.order:
+        if item_id not in today_ids:
+            raise HTTPException(400, f"item {item_id} is not in Today")
+    reorder_items(db, body.order)
     return list_items(db, "today")
 
 
