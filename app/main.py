@@ -18,7 +18,7 @@ from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="Mindcatch", version="0.1.0")
+app = FastAPI(title="Mindcatch", version="0.3.0")
 
 
 def get_db():

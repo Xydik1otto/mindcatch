@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/bigpi/mindcatch/actions/workflows/tests.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-0.1.0--alpha-purple.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-purple.svg)
 
 Offline-first «виловлювач думок»: одне велике поле → задача, нуль тертя.
 
@@ -22,6 +22,10 @@ Offline-first «виловлювач думок»: одне велике пол�
 - **Імпорт скріншота**: drag&drop зображення → якщо встановлений Tesseract (`pytesseract`), OCR → евристика витягує рядки, схожі на задачі → кандидати на підтвердження одним кліком. **Без Tesseract — graceful fallback на ручний ввід** (`ocr_available: false`, UI показує підказку).
 - **Огляд/triage**: inbox → перетягнути (select) в Today / Week / Someday / Done.
 - **Today view + focus mode**: одна задача, таймер pomodoro 25/5 хв (довга перерва 15 хв після кожних 4).
+- **Повторювані задачі**: «↻» на задачі — цикл немає → щоденна → щотижнева; «✓» виконує задачу й одразу створює наступне повторення в inbox (зсув `remind_at`/`due_date`).
+- **Нотатки з markdown**: «📝» на нотатці → редактор з живим preview (безпечний мінімальний рендер: заголовки, **жирний**, `код`, списки, посилання http(s) only).
+- **Естимации часу + таймер**: «⏱» старт/стоп на задачі; історія сесій (`time_logs`), витрачений час проти естимации («⏱ 12/45 хв»).
+- **Weekly review**: вкладка Review — що зроблено за тиждень (з понеділка), що перенеслось, скільки створено.
 - **Дані**: SQLite локально; export у JSON. PWA-manifest + service worker (offline shell).
 
 ## Швидкий старт
@@ -59,7 +63,14 @@ OCR (опційно): встановіть Tesseract (https://github.com/UB-Mann
 | <kbd>T</kbd> | Today view |
 | <kbd>F</kbd> | focus mode (для задач у Today) |
 | <kbd>E</kbd> | export JSON |
-| <kbd>Esc</kbd> | закрити focus mode |
+| <kbd>Esc</kbd> | закрити focus / редактор нотатки |
+
+## Що нового у v0.3.0
+
+- Повторювані задачі (daily/weekly) з автопородженням наступного разу при виконанні.
+- Повний текст нотатки + markdown preview (XSS-безпечний рендер).
+- Естимации часу і таймер на задачу з історією сесій (`time_logs`).
+- Weekly review view: зроблено за тиждень / перенеслось / створено.
 
 ## Структура
 
@@ -81,8 +92,9 @@ mindcatch/
 
 ## Roadmap
 
-- **v0.1 (alpha, зараз)**: capture, парсинг дат, локальні нагадування, digest, triage, focus pomodoro, export JSON.
-- **Далі**: повторювані задачі, markdown-нотатки, естимации часу, weekly review (див. PLAN.md).
+- ~~v0.1 (alpha)~~: capture, парсинг дат, локальні нагадування, digest, triage, focus pomodoro, export JSON.
+- ~~v0.3 (зараз)~~: повторювані задачі, markdown-нотатки, естимации часу + таймер, weekly review.
+- **Далі**: статистика mental load, теги-хештеги, шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
 
 ## Ліцензія
 
