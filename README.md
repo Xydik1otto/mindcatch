@@ -126,6 +126,13 @@ mindcatch/
 - ~~v0.4 (зараз)~~: теги/проєкти + фільтр-чіпси, quick-capture API, пошук + архів, статистика фокусу, PWA install + offline shell v3.
 - **Далі**: шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
 
+## Contributing
+
+PRs вітаються! Дивіться [CONTRIBUTING.md](CONTRIBUTING.md) (правила, чекліст
+PR). Баги — через шаблон issue; безпека — приватно, див. [SECURITY.md](SECURITY.md).
+Проєкт піде в опенсорс — рекомендовані GitHub topics:
+`adhd`, `productivity`, `gtd`, `pomodoro`, `pwa`, `fastapi`, `local-first`.
+
 ## Ліцензія
 
 MIT — див. [LICENSE](LICENSE).
