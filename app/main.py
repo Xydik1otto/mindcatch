@@ -11,8 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import (create_item, export_all, get_conn, get_item, init_db,
-                 list_items, update_fields, update_status)
-from .logic import date_parser, digest, markdown, ocr_extract, recurring, triage
+                 list_items, start_timer, stop_timer, timer_state,
+                 update_fields, update_status)
+from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
+                    time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -45,6 +47,10 @@ class RecurrenceIn(BaseModel):
 
 class BodyIn(BaseModel):
     body: str
+
+
+class EstimateIn(BaseModel):
+    minutes: int | None
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +152,43 @@ def complete_item(item_id: int, db=DbDep):
     else:
         spawned = None
     return {"completed": updated, "next": spawned}
+
+
+@app.post("/api/items/{item_id}/estimate")
+def set_estimate(item_id: int, body: EstimateIn, db=DbDep):
+    """Planned minutes for the task."""
+    if get_item(db, item_id) is None:
+        raise HTTPException(404, "item not found")
+    try:
+        minutes = time_tracker.validate_estimate(body.minutes)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return update_fields(db, item_id, estimate_minutes=minutes)
+
+
+@app.post("/api/items/{item_id}/timer/start")
+def timer_start(item_id: int, db=DbDep):
+    if get_item(db, item_id) is None:
+        raise HTTPException(404, "item not found")
+    try:
+        return start_timer(db, item_id)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.post("/api/items/{item_id}/timer/stop")
+def timer_stop(item_id: int, db=DbDep):
+    try:
+        return stop_timer(db, item_id)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.get("/api/items/{item_id}/timer")
+def timer_get(item_id: int, db=DbDep):
+    if get_item(db, item_id) is None:
+        raise HTTPException(404, "item not found")
+    return timer_state(db, item_id)
 
 
 @app.post("/api/ocr")

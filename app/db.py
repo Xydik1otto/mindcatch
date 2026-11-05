@@ -82,10 +82,59 @@ def get_item(conn: sqlite3.Connection, item_id: int) -> dict | None:
 def list_items(conn: sqlite3.Connection, status: str | None = None) -> list[dict]:
     if status:
         rows = conn.execute(
-            "SELECT * FROM items WHERE status = ? ORDER BY id", (status,)).fetchall()
+            "SELECT items.*, "
+            "(SELECT SUM(minutes) FROM time_logs WHERE item_id = items.id) AS spent_minutes, "
+            "(SELECT COUNT(*) FROM time_logs WHERE item_id = items.id AND ended_at IS NULL) AS timer_running "
+            "FROM items WHERE status = ? ORDER BY id", (status,)).fetchall()
     else:
-        rows = conn.execute("SELECT * FROM items ORDER BY id").fetchall()
+        rows = conn.execute(
+            "SELECT items.*, "
+            "(SELECT SUM(minutes) FROM time_logs WHERE item_id = items.id) AS spent_minutes, "
+            "(SELECT COUNT(*) FROM time_logs WHERE item_id = items.id AND ended_at IS NULL) AS timer_running "
+            "FROM items ORDER BY id").fetchall()
     return [dict(r) for r in rows]
+
+
+# --- time_logs (timer history) ------------------------------------------------
+
+def start_timer(conn: sqlite3.Connection, item_id: int) -> dict:
+    """Open a new time log; refuses when one is already running."""
+    open_row = conn.execute(
+        "SELECT id FROM time_logs WHERE item_id = ? AND ended_at IS NULL",
+        (item_id,)).fetchone()
+    if open_row:
+        raise ValueError("timer already running for this item")
+    conn.execute("INSERT INTO time_logs (item_id, started_at) VALUES (?, ?)",
+                 (item_id, now_iso()))
+    conn.commit()
+    return {"item_id": item_id, "running": True}
+
+
+def stop_timer(conn: sqlite3.Connection, item_id: int) -> dict:
+    """Close the latest open log, recording whole minutes."""
+    row = conn.execute(
+        "SELECT id, started_at FROM time_logs WHERE item_id = ? AND ended_at IS NULL "
+        "ORDER BY id DESC LIMIT 1", (item_id,)).fetchone()
+    if not row:
+        raise ValueError("no running timer for this item")
+    from .logic import time_tracker
+    ended = now_iso()
+    minutes = time_tracker.elapsed_minutes(row["started_at"], ended)
+    conn.execute("UPDATE time_logs SET ended_at = ?, minutes = ? WHERE id = ?",
+                 (ended, minutes, row["id"]))
+    conn.commit()
+    return {"item_id": item_id, "running": False, "minutes": minutes}
+
+
+def timer_state(conn: sqlite3.Connection, item_id: int) -> dict:
+    logs = [dict(r) for r in conn.execute(
+        "SELECT * FROM time_logs WHERE item_id = ? ORDER BY id", (item_id,)).fetchall()]
+    from .logic import time_tracker
+    return {
+        "logs": logs,
+        "total_minutes": time_tracker.total_minutes(logs),
+        "running": any(l["ended_at"] is None for l in logs),
+    }
 
 
 def update_status(conn: sqlite3.Connection, item_id: int, status: str) -> dict | None:
