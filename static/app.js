@@ -190,7 +190,9 @@ function renderItems(items, el) {
       if (s === it.status) o.selected = true; sel.appendChild(o);
     }
     sel.onchange = async () => {
-      try { await api(`/api/items/${it.id}/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: sel.value }) }); loadView(); }
+      try {
+        if (sel.value === "done" && it.status !== "done" && !confirm(t("archive_confirm"))) { sel.value = it.status; return; }
+        await api(`/api/items/${it.id}/move`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: sel.value }) }); loadView(); }
       catch (e) { alert(e.message); sel.value = it.status; }
     };
     right.appendChild(sel);

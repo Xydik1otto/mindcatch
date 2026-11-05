@@ -13,9 +13,9 @@ from pydantic import BaseModel
 from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
                  init_db, list_items, search_items, start_timer, stop_timer,
                  timer_state, update_fields, update_status)
-from .logic import (date_parser, digest, focus_stats, ics_export, markdown,
-                    ocr_extract, recurring, review, tags, task_export,
-                    time_tracker, triage)
+from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
+                    markdown, ocr_extract, recurring, review, tags,
+                    task_export, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -321,6 +321,15 @@ def export_markdown(db=DbDep):
     return Response(md, media_type="text/markdown; charset=utf-8",
                     headers={"Content-Disposition":
                              "attachment; filename=mindcatch.md"})
+
+
+@app.get("/api/export/items.csv")
+def export_csv(db=DbDep):
+    """All items as CSV (UTF-8 BOM) — opens in Excel/Sheets without a wizard."""
+    csv_text = csv_export.items_to_csv(list_items(db))
+    return Response(csv_text, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition":
+                             "attachment; filename=mindcatch-items.csv"})
 
 
 @app.get("/api/export")
