@@ -13,8 +13,8 @@ from pydantic import BaseModel
 from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
                  init_db, list_items, search_items, start_timer, stop_timer,
                  timer_state, update_fields, update_status)
-from .logic import (date_parser, digest, focus_stats, markdown, ocr_extract,
-                    recurring, review, tags, time_tracker, triage)
+from .logic import (date_parser, digest, focus_stats, ics_export, markdown,
+                    ocr_extract, recurring, review, tags, time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -293,6 +293,15 @@ def focus_stats_api(days: int = 7, db=DbDep):
 def weekly_review_api(db=DbDep):
     """Weekly review: what was done this week, what carried over."""
     return review.weekly_review(list_items(db))
+
+
+@app.get("/api/export/calendar.ics")
+def export_ics(db=DbDep):
+    """All dated items as an iCalendar file for the user's calendar app."""
+    ics = ics_export.items_to_ics(list_items(db))
+    return Response(ics, media_type="text/calendar; charset=utf-8",
+                    headers={"Content-Disposition":
+                             "attachment; filename=mindcatch.ics"})
 
 
 @app.get("/api/export")
