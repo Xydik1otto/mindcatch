@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/bigpi/mindcatch/actions/workflows/tests.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-0.3.0-purple.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-purple.svg)
 
 Offline-first «виловлювач думок»: одне велике поле → задача, нуль тертя.
 
@@ -21,6 +21,10 @@ Offline-first «виловлювач думок»: одне велике пол�
 - **Daily digest**: «Сьогодні: N задач, M нагадувань» на Today view.
 - **Імпорт скріншота**: drag&drop зображення → якщо встановлений Tesseract (`pytesseract`), OCR → евристика витягує рядки, схожі на задачі → кандидати на підтвердження одним кліком. **Без Tesseract — graceful fallback на ручний ввід** (`ocr_available: false`, UI показує підказку).
 - **Огляд/triage**: inbox → перетягнути (select) в Today / Week / Someday / Done.
+- **Теги/проєкти**: `#теги` у capture чіпляються автоматично; 🏷 на item — редагування з підказками з історії; фільтр-чіпси над списком (`?tag=`, `GET /api/tags`).
+- **Пошук + архів**: поле пошуку шукає substring по title і body (без регістру, кирилиця включно) по всіх статусах; `/api/archive` — виконане, свіже зверху.
+- **Статистика фокусу**: вкладка Stats — SVG bar chart хвилин помодоро/таймера за 7 днів (`/api/stats/focus`).
+- **Quick capture API**: `POST /api/quick {text}` — capture з curl/лаунчера без UI (див. нижче).
 - **Today view + focus mode**: одна задача, таймер pomodoro 25/5 хв (довга перерва 15 хв після кожних 4).
 - **Повторювані задачі**: «↻» на задачі — цикл немає → щоденна → щотижнева; «✓» виконує задачу й одразу створює наступне повторення в inbox (зсув `remind_at`/`due_date`).
 - **Нотатки з markdown**: «📝» на нотатці → редактор з живим preview (безпечний мінімальний рендер: заголовки, **жирний**, `код`, списки, посилання http(s) only).
@@ -85,19 +89,22 @@ OCR (опційно): встановіть Tesseract (https://github.com/UB-Mann
 | <kbd>E</kbd> | export JSON |
 | <kbd>Esc</kbd> | закрити focus / редактор нотатки |
 
-## Що нового у v0.3.0
+## Що нового у v0.4.0
 
-- Повторювані задачі (daily/weekly) з автопородженням наступного разу при виконанні.
-- Повний текст нотатки + markdown preview (XSS-безпечний рендер).
-- Естимации часу і таймер на задачу з історією сесій (`time_logs`).
-- Weekly review view: зроблено за тиждень / перенеслось / створено.
+- Теги/проєкти: `#хештеги` при capture, фільтр-чіпси, підказки з історії.
+- `POST /api/quick` — capture з командного рядка (curl/ярлики).
+- Пошук по всіх задачах і нотатках + архів виконаного.
+- Статистика фокусу: SVG-графік хвилин за день/тиждень.
+- PWA: кнопка «Встановити», SVG-іконка, надійніший offline shell (SW v3).
+
+Див. [CHANGELOG.md](CHANGELOG.md) для повної історії.
 
 ## Структура
 
 ```
 mindcatch/
 ├── app/
-│   ├── main.py            # FastAPI: /api/capture, /api/items, /api/ocr, /api/digest, /api/export
+│   ├── main.py            # FastAPI: /api/capture, /api/quick, /api/search, /api/stats/focus, /api/export
 │   ├── db.py              # SQLite (stdlib sqlite3, WAL) + міграції
 │   └── logic/
 │       ├── date_parser.py # UA+EN дати → remind_at / due_date
@@ -113,8 +120,9 @@ mindcatch/
 ## Roadmap
 
 - ~~v0.1 (alpha)~~: capture, парсинг дат, локальні нагадування, digest, triage, focus pomodoro, export JSON.
-- ~~v0.3 (зараз)~~: повторювані задачі, markdown-нотатки, естимации часу + таймер, weekly review.
-- **Далі**: статистика mental load, теги-хештеги, шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
+- ~~v0.3~~: повторювані задачі, markdown-нотатки, естимации часу + таймер, weekly review.
+- ~~v0.4 (зараз)~~: теги/проєкти + фільтр-чіпси, quick-capture API, пошук + архів, статистика фокусу, PWA install + offline shell v3.
+- **Далі**: шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
 
 ## Ліцензія
 
