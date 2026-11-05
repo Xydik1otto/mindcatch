@@ -126,6 +126,8 @@ function tagList(item) { return (item.tags || "").split(",").filter(Boolean); }
 async function loadView() {
   if (view === "review") return loadReview();
   if (view === "stats") return loadStats();
+  if (view === "morning") return loadMorning();
+  if (view === "calendar") return loadCalendar();
   await loadTagChips();
   const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
   const items = await api("/api/items?status=" + view + tagQ);
@@ -139,6 +141,7 @@ function renderItems(items, el) {
   for (const it of items) {
     const div = document.createElement("div");
     div.className = "item";
+    div.dataset.id = it.id;
     const statuses = ["inbox", "today", "week", "someday", "done"];
     div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + recName(it.recurrence) : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " " + t("min_short") : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t2 => "#" + escapeHtml(t2)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
@@ -223,6 +226,34 @@ function renderItems(items, el) {
     }
     el.appendChild(div);
   }
+  if (view === "today" && items.length > 1) enableDragReorder(el);
+}
+
+// --- Drag-reorder in Today (manual order persisted via /api/today/reorder) ---
+function enableDragReorder(el) {
+  let dragId = null;
+  for (const div of el.children) {
+    div.draggable = true;
+    div.style.cursor = "grab";
+    div.addEventListener("dragstart", e => {
+      dragId = div.dataset.id;
+      e.dataTransfer.setData("text/plain", dragId);
+      e.dataTransfer.effectAllowed = "move";
+      div.style.opacity = ".4";
+    });
+    div.addEventListener("dragend", () => { div.style.opacity = ""; });
+    div.addEventListener("dragover", e => e.preventDefault());
+    div.addEventListener("drop", async e => {
+      e.preventDefault();
+      const dragged = el.querySelector(`[data-id="${CSS.escape(dragId)}"]`);
+      dragId = null;
+      if (!dragged || dragged === div) return;
+      el.insertBefore(dragged, div);
+      const order = [...el.children].map(c => parseInt(c.dataset.id, 10)).filter(n => !isNaN(n));
+      try { await api("/api/today/reorder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order }) }); }
+      catch (err) { loadView(); }
+    });
+  }
 }
 
 function escapeHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
@@ -241,6 +272,72 @@ function recName(r) {
   if (r === "weekdays") return t("rec_weekdays");
   if (r && r.startsWith("every:")) return t("rec_every", { n: r.slice(6) });
   return r;
+}
+
+// --- Morning warm-up templates (roadmap v0.3: «шаблони ранкової розгінки») ---
+async function loadMorning() {
+  $("tagChips").style.display = "none";
+  const tpls = await api("/api/morning/templates");
+  const el = $("list");
+  el.innerHTML = `<h3 style="margin:6px 0 10px">${t("morning_head")}</h3>` +
+    `<p class="muted" style="margin-bottom:10px">${t("morning_note")}</p>`;
+  for (const tpl of tpls) {
+    const name = LANG === "en" ? tpl.name_en : tpl.name_ua;
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<div><div class="type">${t("morning_tpl")} · ${t("morning_steps", { n: tpl.steps })}</div><div>${escapeHtml(name)}</div></div>`;
+    const btn = document.createElement("button");
+    btn.textContent = t("morning_apply");
+    btn.setAttribute("aria-label", t("morning_apply_aria", { name }));
+    btn.onclick = async () => {
+      try {
+        const r = await api("/api/morning/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ template_id: tpl.id }) });
+        alert(t("morning_applied", { n: r.items.length }));
+        document.querySelector("nav button[data-view=today]").click();
+      } catch (e) { alert(e.message); }
+    };
+    div.appendChild(btn);
+    el.appendChild(div);
+  }
+}
+
+// --- Calendar view of a month (GET /api/calendar, Monday-first grid) ---
+let calYear = null, calMonth = null;
+
+async function loadCalendar() {
+  $("tagChips").style.display = "none";
+  const q = (calYear && calMonth) ? `?year=${calYear}&month=${calMonth}` : "";
+  const d = await api("/api/calendar" + q);
+  calYear = d.year; calMonth = d.month;
+  const months = t("months").split(",");
+  const wdays = t("cal_weekdays").split(",");
+  const el = $("list");
+  let html = `<div style="display:flex;gap:10px;align-items:center;margin:6px 0 10px">` +
+    `<button class="ghost" aria-label="${t("cal_prev_aria")}" onclick="calShift(-1)">←</button>` +
+    `<h3 style="flex:1;text-align:center">${t("cal_head", { month: months[calMonth - 1], year: calYear })}</h3>` +
+    `<button class="ghost" aria-label="${t("cal_next_aria")}" onclick="calShift(1)">→</button></div>` +
+    `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:.75rem">`;
+  for (const wd of wdays) html += `<div class="muted" style="text-align:center">${wd}</div>`;
+  for (const week of d.weeks) {
+    for (const cell of week) {
+      if (!cell) { html += "<div></div>"; continue; }
+      const dayItems = d.items[cell.date] || [];
+      const isToday = cell.date === d.today;
+      html += `<div class="${cell.in_month ? "" : "muted"}" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px;min-height:56px;${isToday ? "border-color:var(--accent);" : ""}">` +
+        `<div class="muted" style="font-size:.7rem">${parseInt(cell.date.slice(8), 10)}</div>` +
+        dayItems.map(i => `<div title="${escapeHtml(i.text)}" style="font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.type === "reminder" ? "⏰ " : "• "}${escapeHtml(i.text)}</div>`).join("") +
+        `</div>`;
+    }
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function calShift(delta) {
+  calMonth += delta;
+  if (calMonth < 1) { calMonth = 12; calYear--; }
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  await loadCalendar();
 }
 
 // --- Weekly review view ---

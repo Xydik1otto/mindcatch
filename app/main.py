@@ -3,6 +3,7 @@ JSON API. All data lives in a local SQLite file."""
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
@@ -11,11 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
-                 init_db, list_items, search_items, start_timer, stop_timer,
-                 timer_state, update_fields, update_status)
-from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
-                    markdown, ocr_extract, recurring, review, tags,
-                    task_export, time_tracker, triage)
+                 init_db, list_items, reorder_items, search_items,
+                 start_timer, stop_timer, timer_state, update_fields,
+                 update_status)
+from .logic import (calendar_view, csv_export, date_parser, digest,
+                    focus_stats, ics_export, markdown, morning_templates,
+                    ocr_extract, recurring, review, tags, task_export,
+                    time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -57,6 +60,14 @@ class BodyIn(BaseModel):
 
 class EstimateIn(BaseModel):
     minutes: int | None
+
+
+class MorningApplyIn(BaseModel):
+    template_id: str
+
+
+class ReorderIn(BaseModel):
+    order: list[int]
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +135,19 @@ def inbox(db=DbDep):
 
 @app.get("/api/today")
 def today(db=DbDep):
+    return list_items(db, "today")
+
+
+@app.post("/api/today/reorder")
+def today_reorder(body: ReorderIn, db=DbDep):
+    """Persist a manual Today order (drag-reorder in the UI)."""
+    today_ids = {i["id"] for i in list_items(db, "today")}
+    if len(set(body.order)) != len(body.order):
+        raise HTTPException(400, "duplicate ids in order")
+    for item_id in body.order:
+        if item_id not in today_ids:
+            raise HTTPException(400, f"item {item_id} is not in Today")
+    reorder_items(db, body.order)
     return list_items(db, "today")
 
 
@@ -278,6 +302,24 @@ def ocr_status():
     return {"ocr_available": ocr_extract.ocr_available()}
 
 
+@app.get("/api/morning/templates")
+def morning_list():
+    """Morning warm-up templates (roadmap v0.3) — ready-made task sets."""
+    return morning_templates.list_templates()
+
+
+@app.post("/api/morning/apply")
+def morning_apply(body: MorningApplyIn, db=DbDep):
+    """Seed Today with the steps of a morning template (idempotent-free:
+    every call appends a fresh set so it can be re-run after a bad day)."""
+    steps = morning_templates.template_steps(body.template_id)
+    if steps is None:
+        raise HTTPException(400, f"unknown template: {body.template_id}")
+    created = [create_item(db, s["text"], s["type"], status="today")
+               for s in steps]
+    return {"template_id": body.template_id, "items": created}
+
+
 @app.get("/api/stats/focus")
 def focus_stats_api(days: int = 7, db=DbDep):
     """Focus minutes per day (last N days) + SVG bar chart."""
@@ -294,6 +336,20 @@ def focus_stats_api(days: int = 7, db=DbDep):
 def weekly_review_api(db=DbDep):
     """Weekly review: what was done this week, what carried over."""
     return review.weekly_review(list_items(db))
+
+
+@app.get("/api/calendar")
+def calendar_api(year: int | None = None, month: int | None = None, db=DbDep):
+    """Month grid (Monday-first) + items mapped onto days (due_date,
+    else the date of remind_at). Done items are skipped."""
+    today = date.today()
+    try:
+        return calendar_view.month_payload(
+            today.year if year is None else year,
+            today.month if month is None else month,
+            list_items(db))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/export/calendar.ics")

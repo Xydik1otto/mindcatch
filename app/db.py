@@ -39,6 +39,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         "body": "TEXT",
         "estimate_minutes": "INTEGER",
         "tags": "TEXT",
+        "sort_order": "INTEGER",
     }
     for name, decl in additions.items():
         if name not in cols:
@@ -80,20 +81,35 @@ def get_item(conn: sqlite3.Connection, item_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+# Manual ordering (drag-reorder in Today): explicit sort_order first,
+# untouched items keep insertion order after them.
+_ORDER_BY = ("ORDER BY CASE WHEN sort_order IS NULL THEN 1 ELSE 0 END, "
+             "COALESCE(sort_order, id), id")
+
+
 def list_items(conn: sqlite3.Connection, status: str | None = None) -> list[dict]:
     if status:
         rows = conn.execute(
             "SELECT items.*, "
             "(SELECT SUM(minutes) FROM time_logs WHERE item_id = items.id) AS spent_minutes, "
             "(SELECT COUNT(*) FROM time_logs WHERE item_id = items.id AND ended_at IS NULL) AS timer_running "
-            "FROM items WHERE status = ? ORDER BY id", (status,)).fetchall()
+            f"FROM items WHERE status = ? {_ORDER_BY}", (status,)).fetchall()
     else:
         rows = conn.execute(
             "SELECT items.*, "
             "(SELECT SUM(minutes) FROM time_logs WHERE item_id = items.id) AS spent_minutes, "
             "(SELECT COUNT(*) FROM time_logs WHERE item_id = items.id AND ended_at IS NULL) AS timer_running "
-            "FROM items ORDER BY id").fetchall()
+            f"FROM items {_ORDER_BY}").fetchall()
     return [dict(r) for r in rows]
+
+
+def reorder_items(conn: sqlite3.Connection, ordered_ids: list[int]) -> None:
+    """Persist a manual order: ids get their list position as sort_order.
+    Ids left out keep NULL (they sort after the ordered ones)."""
+    for pos, item_id in enumerate(ordered_ids):
+        conn.execute("UPDATE items SET sort_order = ? WHERE id = ?",
+                     (pos, item_id))
+    conn.commit()
 
 
 def search_items(conn: sqlite3.Connection, q: str) -> list[dict]:
