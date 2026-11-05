@@ -60,7 +60,12 @@
     "morning_steps": "{n} кроків",
     "morning_apply": "Застосувати → Today",
     "morning_apply_aria": "Застосувати шаблон «{name}»",
-    "morning_applied": "Додано {n} задач у Today"
+    "morning_applied": "Додано {n} задач у Today",
+    "cal_head": "{month} {year}",
+    "cal_prev_aria": "Попередній місяць",
+    "cal_next_aria": "Наступний місяць",
+    "cal_weekdays": "Пн,Вт,Ср,Чт,Пт,Сб,Нд",
+    "months": "Січень,Лютий,Березень,Квітень,Травень,Червень,Липень,Серпень,Вересень,Жовтень,Листопад,Грудень"
   },
   "en": {
     "sub": "One field — one thought. <kbd>N</kbd> — new capture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export",
@@ -123,6 +128,11 @@
     "morning_steps": "{n} steps",
     "morning_apply": "Apply → Today",
     "morning_apply_aria": "Apply template “{name}”",
-    "morning_applied": "Added {n} tasks to Today"
+    "morning_applied": "Added {n} tasks to Today",
+    "cal_head": "{month} {year}",
+    "cal_prev_aria": "Previous month",
+    "cal_next_aria": "Next month",
+    "cal_weekdays": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+    "months": "January,February,March,April,May,June,July,August,September,October,November,December"
   }
 }

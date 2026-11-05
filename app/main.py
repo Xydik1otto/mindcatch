@@ -3,6 +3,7 @@ JSON API. All data lives in a local SQLite file."""
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
@@ -14,9 +15,10 @@ from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
                  init_db, list_items, reorder_items, search_items,
                  start_timer, stop_timer, timer_state, update_fields,
                  update_status)
-from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
-                    markdown, morning_templates, ocr_extract, recurring,
-                    review, tags, task_export, time_tracker, triage)
+from .logic import (calendar_view, csv_export, date_parser, digest,
+                    focus_stats, ics_export, markdown, morning_templates,
+                    ocr_extract, recurring, review, tags, task_export,
+                    time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -334,6 +336,20 @@ def focus_stats_api(days: int = 7, db=DbDep):
 def weekly_review_api(db=DbDep):
     """Weekly review: what was done this week, what carried over."""
     return review.weekly_review(list_items(db))
+
+
+@app.get("/api/calendar")
+def calendar_api(year: int | None = None, month: int | None = None, db=DbDep):
+    """Month grid (Monday-first) + items mapped onto days (due_date,
+    else the date of remind_at). Done items are skipped."""
+    today = date.today()
+    try:
+        return calendar_view.month_payload(
+            today.year if year is None else year,
+            today.month if month is None else month,
+            list_items(db))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/export/calendar.ics")

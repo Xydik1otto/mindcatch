@@ -127,6 +127,7 @@ async function loadView() {
   if (view === "review") return loadReview();
   if (view === "stats") return loadStats();
   if (view === "morning") return loadMorning();
+  if (view === "calendar") return loadCalendar();
   await loadTagChips();
   const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
   const items = await api("/api/items?status=" + view + tagQ);
@@ -298,6 +299,45 @@ async function loadMorning() {
     div.appendChild(btn);
     el.appendChild(div);
   }
+}
+
+// --- Calendar view of a month (GET /api/calendar, Monday-first grid) ---
+let calYear = null, calMonth = null;
+
+async function loadCalendar() {
+  $("tagChips").style.display = "none";
+  const q = (calYear && calMonth) ? `?year=${calYear}&month=${calMonth}` : "";
+  const d = await api("/api/calendar" + q);
+  calYear = d.year; calMonth = d.month;
+  const months = t("months").split(",");
+  const wdays = t("cal_weekdays").split(",");
+  const el = $("list");
+  let html = `<div style="display:flex;gap:10px;align-items:center;margin:6px 0 10px">` +
+    `<button class="ghost" aria-label="${t("cal_prev_aria")}" onclick="calShift(-1)">←</button>` +
+    `<h3 style="flex:1;text-align:center">${t("cal_head", { month: months[calMonth - 1], year: calYear })}</h3>` +
+    `<button class="ghost" aria-label="${t("cal_next_aria")}" onclick="calShift(1)">→</button></div>` +
+    `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:.75rem">`;
+  for (const wd of wdays) html += `<div class="muted" style="text-align:center">${wd}</div>`;
+  for (const week of d.weeks) {
+    for (const cell of week) {
+      if (!cell) { html += "<div></div>"; continue; }
+      const dayItems = d.items[cell.date] || [];
+      const isToday = cell.date === d.today;
+      html += `<div class="${cell.in_month ? "" : "muted"}" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px;min-height:56px;${isToday ? "border-color:var(--accent);" : ""}">` +
+        `<div class="muted" style="font-size:.7rem">${parseInt(cell.date.slice(8), 10)}</div>` +
+        dayItems.map(i => `<div title="${escapeHtml(i.text)}" style="font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.type === "reminder" ? "⏰ " : "• "}${escapeHtml(i.text)}</div>`).join("") +
+        `</div>`;
+    }
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function calShift(delta) {
+  calMonth += delta;
+  if (calMonth < 1) { calMonth = 12; calYear--; }
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  await loadCalendar();
 }
 
 // --- Weekly review view ---
