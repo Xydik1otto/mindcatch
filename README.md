@@ -32,7 +32,11 @@ Offline-first «виловлювач думок»: одне велике пол�
 - **Нотатки з markdown**: «📝» на нотатці → редактор з живим preview (безпечний мінімальний рендер: заголовки, **жирний**, `код`, списки, посилання http(s) only).
 - **Естимации часу + таймер**: «⏱» старт/стоп на задачі; історія сесій (`time_logs`), витрачений час проти естимации («⏱ 12/45 хв»).
 - **Weekly review**: вкладка Review — що зроблено за тиждень (з понеділка), що перенеслось, скільки створено.
-- **Дані**: SQLite локально; export у JSON. PWA-manifest + service worker (offline shell).
+- **Дані**: SQLite локально; one-click експорт JSON / CSV / ICS / Todoist / Markdown. PWA-manifest + service worker (offline shell).
+- **Календар (ICS)**: `/api/export/calendar.ics` — задачі з датами стають подіями у вашому календарі (Google/Outlook/Apple), повторювані — як RRULE.
+- **Todoist/Markdown**: `/api/export/todoist.md` вставляється прямо в Todoist (`@мітки`, `p1`-`p4`, 📅 дати); `/api/export/markdown` — повний експорт за статусами.
+- **Onboarding tour**: 3 підказки при першому вході (localStorage — показуються один раз).
+- **i18n UA/EN**: перемикач у шапці (клавіша <kbd>L</kbd>), авто-детект мови браузера.
 
 ## Швидкий старт
 
@@ -91,13 +95,16 @@ OCR (опційно): встановіть Tesseract (https://github.com/UB-Mann
 | <kbd>E</kbd> | export JSON |
 | <kbd>Esc</kbd> | закрити focus / редактор нотатки |
 
-## Що нового у v0.4.0
+## Що нового у v1.0.0
 
-- Теги/проєкти: `#хештеги` при capture, фільтр-чіпси, підказки з історії.
-- `POST /api/quick` — capture з командного рядка (curl/ярлики).
-- Пошук по всіх задачах і нотатках + архів виконаного.
-- Статистика фокусу: SVG-графік хвилин за день/тиждень.
-- PWA: кнопка «Встановити», SVG-іконка, надійніший offline shell (SW v3).
+- ICS-експорт у календар (RFC 5545, RRULE для повторюваних).
+- Повторення «кожні N днів» і «лише будні» (пн-пт).
+- Todoist-сумісний і Markdown-експорт задач.
+- Onboarding tour: 3 підказки при першому вході.
+- UA/EN перемикач мови + авто-детект (без російської — політичне рішення).
+- README.en.md, INSTALL.md, packaging (`pip install -e .`, команда `mindcatch`).
+- Data safety: one-click CSV + підтвердження перед архівуванням.
+- A11y: aria-labels, skip-link, focus-visible, dialog-ролі.
 
 Див. [CHANGELOG.md](CHANGELOG.md) для повної історії.
 
@@ -123,7 +130,8 @@ mindcatch/
 
 - ~~v0.1 (alpha)~~: capture, парсинг дат, локальні нагадування, digest, triage, focus pomodoro, export JSON.
 - ~~v0.3~~: повторювані задачі, markdown-нотатки, естимации часу + таймер, weekly review.
-- ~~v0.4 (зараз)~~: теги/проєкти + фільтр-чіпси, quick-capture API, пошук + архів, статистика фокусу, PWA install + offline shell v3.
+- ~~v0.4~~: теги/проєкти + фільтр-чіпси, quick-capture API, пошук + архів, статистика фокусу, PWA install + offline shell v3.
+- ~~v1.0 (зараз)~~: ICS-календар, every-N/weekdays повторення, Todoist/Markdown експорт, onboarding tour, i18n UA/EN, INSTALL.md + packaging, a11y, open-source hygiene.
 - **Далі**: шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
 
 ## Contributing
