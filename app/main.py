@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import (create_item, export_all, get_conn, get_item, init_db,
-                 list_items, update_status)
-from .logic import date_parser, digest, ocr_extract, triage
+                 list_items, update_fields, update_status)
+from .logic import date_parser, digest, ocr_extract, recurring, triage
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -37,6 +37,14 @@ class CaptureIn(BaseModel):
 
 class MoveIn(BaseModel):
     status: str
+
+
+class RecurrenceIn(BaseModel):
+    recurrence: str | None  # None | daily | weekly
+
+
+class BodyIn(BaseModel):
+    body: str
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +99,39 @@ def move_item(item_id: int, body: MoveIn, db=DbDep):
     except ValueError as e:
         raise HTTPException(400, str(e))
     return update_status(db, item_id, updated["status"])
+
+
+@app.post("/api/items/{item_id}/recurrence")
+def set_recurrence(item_id: int, body: RecurrenceIn, db=DbDep):
+    """Set daily/weekly recurrence (None = one-off)."""
+    item = get_item(db, item_id)
+    if not item:
+        raise HTTPException(404, "item not found")
+    try:
+        rec = recurring.validate(body.recurrence)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return update_fields(db, item_id, recurrence=rec)
+
+
+@app.post("/api/items/{item_id}/complete")
+def complete_item(item_id: int, db=DbDep):
+    """Mark done; recurring items immediately spawn their next occurrence."""
+    item = get_item(db, item_id)
+    if not item:
+        raise HTTPException(404, "item not found")
+    updated = update_status(db, item_id, "done")
+    nxt = recurring.spawn_next(item)
+    if nxt:
+        spawned = create_item(db, nxt["text"], nxt["type"], nxt["remind_at"],
+                              status=nxt["status"], due_date=nxt["due_date"])
+        db.execute("UPDATE items SET recurrence = ? WHERE id = ?",
+                   (nxt["recurrence"], spawned["id"]))
+        db.commit()
+        spawned = get_item(db, spawned["id"])
+    else:
+        spawned = None
+    return {"completed": updated, "next": spawned}
 
 
 @app.post("/api/ocr")

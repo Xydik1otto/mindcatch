@@ -68,9 +68,23 @@ async function loadView() {
     const div = document.createElement("div");
     div.className = "item";
     const statuses = ["inbox", "today", "week", "someday", "done"];
-    div.innerHTML = `<div><div class="type">${it.type}</div><div>${escapeHtml(it.text)}</div></div>`;
+    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + (it.recurrence === "daily" ? "щоденна" : "щотижнева") : ""}${it.estimate_minutes ? " · ⏱ " + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
     right.style.cssText = "display:flex;gap:6px;align-items:center";
+    const rec = document.createElement("button");
+    rec.className = "ghost"; rec.title = "Повторення: немає → щоденна → щотижнева";
+    rec.textContent = "↻" + (it.recurrence === "daily" ? "1" : it.recurrence === "weekly" ? "7" : "");
+    rec.onclick = async () => {
+      const cycle = { "": "daily", "daily": "weekly", "weekly": "" };
+      const next = cycle[it.recurrence || ""] ?? "daily";
+      await api(`/api/items/${it.id}/recurrence`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recurrence: next || null }) });
+      loadView();
+    };
+    right.appendChild(rec);
+    const cb = document.createElement("button");
+    cb.className = "ghost"; cb.textContent = "✓"; cb.title = "Виконано (повторювані створять наступний раз)";
+    cb.onclick = async () => { await api(`/api/items/${it.id}/complete`, { method: "POST" }); loadView(); };
+    right.appendChild(cb);
     const sel = document.createElement("select");
     for (const s of statuses) {
       const o = document.createElement("option"); o.value = s; o.textContent = s;

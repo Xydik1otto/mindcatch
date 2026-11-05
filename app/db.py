@@ -95,6 +95,17 @@ def update_status(conn: sqlite3.Connection, item_id: int, status: str) -> dict |
     return get_item(conn, item_id)
 
 
+def update_fields(conn: sqlite3.Connection, item_id: int, **fields) -> dict | None:
+    """Generic partial update (recurrence, body, estimate_minutes, ...)."""
+    if not fields:
+        return get_item(conn, item_id)
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    conn.execute(f"UPDATE items SET {cols}, updated_at = ? WHERE id = ?",
+                 (*fields.values(), now_iso(), item_id))
+    conn.commit()
+    return get_item(conn, item_id)
+
+
 def export_all(conn: sqlite3.Connection) -> str:
     items = list_items(conn)
     return json.dumps({"exported_at": now_iso(), "items": items},

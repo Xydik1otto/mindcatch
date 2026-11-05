@@ -1,0 +1,82 @@
+"""API tests: capture date parsing, digest, recurring complete (TestClient)."""
+
+import os
+import tempfile
+
+import pytest
+from fastapi.testclient import TestClient
+
+_TMP = tempfile.mkdtemp(prefix="mindcatch-test-")
+os.environ["MINDCATCH_DB"] = os.path.join(_TMP, "test.db")
+
+from app.main import app  # noqa: E402  (env must be set before import)
+
+
+@pytest.fixture()
+def client():
+    # fresh DB per test
+    db_path = os.environ["MINDCATCH_DB"]
+    for suffix in ("", "-wal", "-shm"):
+        p = db_path + suffix
+        if os.path.exists(p):
+            os.remove(p)
+    with TestClient(app) as c:
+        yield c
+
+
+class TestCaptureParsing:
+    def test_ua_reminder_parses_remind_at(self, client):
+        r = client.post("/api/capture", json={"text": "подзвонити мамі завтра 15:00"}).json()
+        assert r["type"] == "reminder"
+        assert r["remind_at"].endswith("T15:00:00")
+        assert r["due_date"]
+
+    def test_plain_note_has_no_dates(self, client):
+        r = client.post("/api/capture", json={"text": "просто думка про проєкт"}).json()
+        assert r["type"] == "note"
+        assert r["remind_at"] is None and r["due_date"] is None
+
+    def test_empty_text_400(self, client):
+        assert client.post("/api/capture", json={"text": "  "}).status_code == 400
+
+
+class TestDigest:
+    def test_digest_shape(self, client):
+        d = client.get("/api/digest").json()
+        assert set(d) >= {"date", "tasks", "reminders", "due_today"}
+
+    def test_digest_counts_today_tasks(self, client):
+        item = client.post("/api/capture", json={"text": "написати звіт"}).json()
+        client.post(f"/api/items/{item['id']}/move", json={"status": "today"})
+        d = client.get("/api/digest").json()
+        assert d["tasks"] >= 1
+
+
+class TestRecurring:
+    def test_set_recurrence_and_complete_spawns_next(self, client):
+        item = client.post("/api/capture", json={"text": "винести сміття"}).json()
+        r = client.post(f"/api/items/{item['id']}/recurrence",
+                        json={"recurrence": "daily"}).json()
+        assert r["recurrence"] == "daily"
+
+        done = client.post(f"/api/items/{item['id']}/complete").json()
+        assert done["completed"]["status"] == "done"
+        nxt = done["next"]
+        assert nxt["text"] == "винести сміття"
+        assert nxt["recurrence"] == "daily"
+        assert nxt["status"] == "inbox"
+
+    def test_complete_non_recurring_no_spawn(self, client):
+        item = client.post("/api/capture", json={"text": "разова задача"}).json()
+        done = client.post(f"/api/items/{item['id']}/complete").json()
+        assert done["next"] is None
+        assert done["completed"]["status"] == "done"
+
+    def test_invalid_recurrence_400(self, client):
+        item = client.post("/api/capture", json={"text": "щось"}).json()
+        r = client.post(f"/api/items/{item['id']}/recurrence",
+                        json={"recurrence": "monthly"})
+        assert r.status_code == 400
+
+    def test_complete_missing_404(self, client):
+        assert client.post("/api/items/99999/complete").status_code == 404
