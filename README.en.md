@@ -12,7 +12,7 @@ Offline-first thought catcher: one big field → a task, zero friction.
 
 - A post on r/ADHD: *"app that would take the mental load of having to remember everything"* — **2,411 upvotes, 205 comments**. People with ADHD drown in "keeping everything in their head": any app with forms, fields and settings adds load instead of removing it.
 - r/ProductivityApps requests for **combining calendar + tasks + notes** in one place.
-- **Subscription fatigue**: users are tired of monthly subscriptions to "cloud productivity" — they want a **one-time purchase, local-first** tool.
+- **Subscription fatigue**: users are tired of monthly subscriptions to "cloud productivity" — Mindcatch answers with **local-first, 100% free open source**.
 
 ## What it does
 

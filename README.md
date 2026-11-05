@@ -12,7 +12,7 @@ Offline-first «виловлювач думок»: одне велике пол�
 
 - Пост на r/ADHD: *«app that would take the mental load of having to remember everything»* — **2 411 upvotes, 205 коментарів**. Люди з ADHD тонуть у «тримати все в голові»: будь-який застосунок із формами, полями і налаштуваннями додає навантаження замість того, щоб знімати його.
 - Запити на r/ProductivityApps на **об'єднання calendar + tasks + notes** в одному місці.
-- **Subscription fatigue**: користувачі втомилися від щомісячних підписок на «хмарні productivity» — запит на **one-time purchase, local-first**.
+- **Subscription fatigue**: користувачі втомилися від щомісячних підписок на «хмарні productivity» — Mindcatch відповідає: **local-first і безкоштовний опенсорс**.
 
 ## Що це
 

@@ -4,6 +4,12 @@
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/),
 версіонування — [SemVer](https://semver.org/lang/uk/).
 
+## [Unreleased]
+
+### Видалено
+- Removed: monetization scaffolding — `.github/FUNDING.yml`, секція «Монетизація»
+  з PLAN.md, згадки one-time purchase/Pro з README (100% free OSS).
+
 ## [1.0.0] - 2026-11-05
 
 ### Додано
