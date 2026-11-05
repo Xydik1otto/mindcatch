@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .db import (create_item, export_all, get_conn, get_item, init_db,
-                 list_items, start_timer, stop_timer, timer_state,
-                 update_fields, update_status)
+                 list_items, search_items, start_timer, stop_timer,
+                 timer_state, update_fields, update_status)
 from .logic import (date_parser, digest, markdown, ocr_extract, recurring,
                     review, tags, time_tracker, triage)
 
@@ -124,6 +124,18 @@ def inbox(db=DbDep):
 @app.get("/api/today")
 def today(db=DbDep):
     return list_items(db, "today")
+
+
+@app.get("/api/search")
+def search(q: str = "", db=DbDep):
+    """Full-text search (substring, case-insensitive) over title + note body."""
+    return search_items(db, q)
+
+
+@app.get("/api/archive")
+def archive(db=DbDep):
+    """Done items, newest first — the archive of completed work."""
+    return list(reversed(list_items(db, "done")))
 
 
 @app.get("/api/digest")

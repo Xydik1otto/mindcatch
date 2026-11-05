@@ -96,6 +96,22 @@ def list_items(conn: sqlite3.Connection, status: str | None = None) -> list[dict
     return [dict(r) for r in rows]
 
 
+def search_items(conn: sqlite3.Connection, q: str) -> list[dict]:
+    """Substring search (LIKE-style, case-insensitive incl. Cyrillic) over text+body."""
+    q = (q or "").strip().lower()
+    if not q:
+        return []
+    conn.create_function("lc", 1, lambda s: (s or "").lower(), deterministic=True)
+    pat = f"%{q}%"
+    rows = conn.execute(
+        "SELECT items.*, "
+        "(SELECT SUM(minutes) FROM time_logs WHERE item_id = items.id) AS spent_minutes, "
+        "(SELECT COUNT(*) FROM time_logs WHERE item_id = items.id AND ended_at IS NULL) AS timer_running "
+        "FROM items WHERE lc(text) LIKE ? OR lc(IFNULL(body, '')) LIKE ? ORDER BY id",
+        (pat, pat)).fetchall()
+    return [dict(r) for r in rows]
+
+
 # --- time_logs (timer history) ------------------------------------------------
 
 def start_timer(conn: sqlite3.Connection, item_id: int) -> dict:

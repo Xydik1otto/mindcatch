@@ -89,8 +89,12 @@ async function loadView() {
   const tagQ = tagFilter ? "&tag=" + encodeURIComponent(tagFilter) : "";
   const items = await api("/api/items?status=" + view + tagQ);
   const el = $("list");
-  if (!items.length) { el.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
   el.innerHTML = "";
+  if (!items.length) { el.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
+  renderItems(items, el);
+}
+
+function renderItems(items, el) {
   for (const it of items) {
     const div = document.createElement("div");
     div.className = "item";
@@ -195,8 +199,35 @@ async function loadReview() {
 
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
-  b.classList.add("active"); view = b.dataset.view; loadView();
+  b.classList.add("active"); view = b.dataset.view;
+  $("searchInput").value = "";
+  loadView();
 });
+
+// --- Search (server-side LIKE over text+body, archive included) ---
+let searchTimer = null;
+$("searchInput").addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  searchTimer = setTimeout(() => {
+    if (!q) { view = "inbox"; setActiveNav("inbox"); loadView(); return; }
+    loadSearch(q);
+  }, 250);
+});
+
+function setActiveNav(name) {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.view === name));
+}
+
+async function loadSearch(q) {
+  view = "search"; setActiveNav("");
+  $("tagChips").style.display = "none";
+  const items = await api("/api/search?q=" + encodeURIComponent(q));
+  const el = $("list");
+  if (!items.length) { el.innerHTML = "<p class='muted'>Нічого не знайдено.</p>"; return; }
+  el.innerHTML = `<p class="muted">Знайдено ${items.length} за запитом «${escapeHtml(q)}»:</p>`;
+  renderItems(items, el);
+}
 
 // --- Focus mode (pomodoro 25/5) ---
 async function openFocus(item) {
