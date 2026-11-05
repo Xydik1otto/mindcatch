@@ -42,6 +42,7 @@ python -m uvicorn app.main:app --reload --port 8000
 
 ```bash
 python -m pytest tests/ -v
+bash scripts/smoke.sh   # smoke: піднімає сервер на випадковому порті, перевіряє головні ендпоінти
 ```
 
 ## Quick capture з командного рядка
