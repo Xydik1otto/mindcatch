@@ -19,7 +19,7 @@ from .logic import (csv_export, date_parser, digest, focus_stats, ics_export,
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
-app = FastAPI(title="Mindcatch", version="0.4.0")
+app = FastAPI(title="Mindcatch", version="1.0.0")
 
 
 def get_db():

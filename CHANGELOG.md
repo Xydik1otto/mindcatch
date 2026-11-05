@@ -4,6 +4,37 @@
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/),
 версіонування — [SemVer](https://semver.org/lang/uk/).
 
+## [1.0.0] - 2026-11-05
+
+### Додано
+- **ICS-експорт у календар**: `GET /api/export/calendar.ics` (RFC 5545) — задачі
+  з датами стають подіями (all-day для `due_date`, таймовані для `remind_at`),
+  повторювані переносяться як RRULE. Імпортується в Google Calendar, Outlook,
+  Apple Calendar (запит з r/ProductivityApps: combined calendar+tasks).
+- **Повторення every-N-days і weekdays-only**: нові типи повторення
+  (`every:N`, N≥2; `weekdays` — пн-пт, пропускає вихідні). Цикл в UI:
+  немає → щоденна → щотижнева → будні → кожні N днів.
+- **Markdown/Todoist-сумісний експорт**: `GET /api/export/todoist.md` — чекліст,
+  який вставляється прямо в Todoist (`@мітки`, `p1`-`p4`, 📅 дати);
+  `GET /api/export/markdown` — повний експорт, згрупований за статусами.
+- **Onboarding tour**: 3 підказки при першому вході (capture → triage →
+  експорти), з підсвіткою реальних елементів UI; «Пропустити»/Esc завершують;
+  переглянутість зберігається в localStorage.
+- **i18n UA/EN**: перемикач мови в шапці (клавіша <kbd>L</kbd>), авто-детект
+  мови браузера, вибір зберігається. Словники — `static/i18n.json`.
+  Російську локалізацію не додано (політичне рішення власника).
+- **README.en.md** — англійська версія документації для міжнародної аудиторії.
+- **INSTALL.md** — покрокова інструкція для не-програміста: Windows
+  (`scripts/start.bat`, автозапуск через папку Startup), Linux (systemd user
+  unit), оновлення, резервне копіювання.
+- **Packaging**: `pyproject.toml` з метаданими, консольна команда `mindcatch`,
+  `pip install -e .` працює.
+- **Data safety**: one-click експорт JSON/CSV/ICS/Todoist/Markdown; CSV з UTF-8
+  BOM відкривається в Excel без майстра імпорту; підтвердження перед
+  переміщенням в архів.
+- **A11y**: aria-labels на всіх інтерактивних елементах, skip-link,
+  `:focus-visible`, роль `dialog` у модальних вікнах, клавіатурна навігація.
+
 ## [0.4.0] - 2026-11-05
 
 ### Додано

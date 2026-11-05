@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+
+[dev]
+pytest>=8.0
+
+[ocr]
+pytesseract>=0.3.10
+pillow>=10.0

@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mindcatch"
+version = "1.0.0"
+description = "Offline-first ADHD thought catcher: one field -> task. Local SQLite, PWA, calendar (ICS) and Todoist/Markdown export."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Mindcatch contributors" }]
+requires-python = ">=3.12"
+keywords = ["adhd", "productivity", "gtd", "pomodoro", "pwa", "local-first", "capture"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Scheduling",
+]
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+ocr = ["pytesseract>=0.3.10", "pillow>=10.0"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+mindcatch = "app.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/bigpi/mindcatch"
+Issues = "https://github.com/bigpi/mindcatch/issues"
+
+[tool.setuptools]
+packages = ["app", "app.logic"]
+
+[tool.setuptools.package-data]
+app = ["../static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

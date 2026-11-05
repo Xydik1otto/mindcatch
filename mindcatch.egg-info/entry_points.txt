@@ -1,0 +1,2 @@
+[console_scripts]
+mindcatch = app.cli:main
