@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#7c6cff">
 <title>Mindcatch</title>
 <style>
   :root { --bg:#101418; --card:#1a2027; --fg:#e8ecf1; --muted:#8b95a5; --accent:#7c6cff; --border:#262d38; }
@@ -40,7 +42,7 @@
 </style>
 </head>
 <body>
-<h1>Mindcatch</h1>
+<h1>Mindcatch <button id="installBtn" class="ghost" style="display:none;font-size:.75rem;padding:6px 10px;vertical-align:middle" onclick="installApp()">⬇ Встановити застосунок</button></h1>
 <p class="sub">Одне поле — одна думка. <kbd>N</kbd> — новийcapture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export</p>
 
 <div class="dropzone" id="dropzone">Перетягніть скріншот сюди (OCR, якщо Tesseract встановлений)</div>

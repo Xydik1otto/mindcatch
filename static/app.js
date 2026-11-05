@@ -312,6 +312,25 @@ function updateNotePreview() {
   }, 300);
 }
 
+// --- PWA install prompt ---
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();              // keep our own button instead of the mini-infobar
+  deferredInstall = e;
+  const b = $("installBtn"); if (b) b.style.display = "";
+});
+window.addEventListener("appinstalled", () => {
+  deferredInstall = null;
+  const b = $("installBtn"); if (b) b.style.display = "none";
+});
+async function installApp() {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  await deferredInstall.userChoice; // {outcome: "accepted"|"dismissed"}
+  deferredInstall = null;
+  $("installBtn").style.display = "none";
+}
+
 // --- OCR dropzone ---
 const dz = $("dropzone");
 ["dragover", "dragenter"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("over"); }));
@@ -348,6 +367,13 @@ document.addEventListener("keydown", e => {
   }
   else if (e.key === "e" || e.key === "E") { location.href = "/api/export"; }
 });
+
+// --- Service worker registration (offline shell) ---
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => { /* file:// or SW unsupported */ });
+  });
+}
 
 loadView();
 checkReminders();
