@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from .db import (create_item, export_all, get_conn, get_item, init_db,
                  list_items, update_fields, update_status)
-from .logic import date_parser, digest, ocr_extract, recurring, triage
+from .logic import date_parser, digest, markdown, ocr_extract, recurring, triage
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -99,6 +99,20 @@ def move_item(item_id: int, body: MoveIn, db=DbDep):
     except ValueError as e:
         raise HTTPException(400, str(e))
     return update_status(db, item_id, updated["status"])
+
+
+@app.put("/api/items/{item_id}/body")
+def set_body(item_id: int, body: BodyIn, db=DbDep):
+    """Full note text (markdown)."""
+    if get_item(db, item_id) is None:
+        raise HTTPException(404, "item not found")
+    return update_fields(db, item_id, body=body.body)
+
+
+@app.post("/api/md/preview")
+def md_preview(body: BodyIn):
+    """Server-rendered markdown preview for the note editor."""
+    return {"html": markdown.markdown_to_html(body.body)}
 
 
 @app.post("/api/items/{item_id}/recurrence")

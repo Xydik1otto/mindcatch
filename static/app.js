@@ -85,6 +85,12 @@ async function loadView() {
     cb.className = "ghost"; cb.textContent = "✓"; cb.title = "Виконано (повторювані створять наступний раз)";
     cb.onclick = async () => { await api(`/api/items/${it.id}/complete`, { method: "POST" }); loadView(); };
     right.appendChild(cb);
+    if (it.type === "note") {
+      const nb = document.createElement("button");
+      nb.className = "ghost"; nb.textContent = "📝"; nb.title = "Редагувати нотатку (markdown)";
+      nb.onclick = () => openNoteEditor(it);
+      right.appendChild(nb);
+    }
     const sel = document.createElement("select");
     for (const s of statuses) {
       const o = document.createElement("option"); o.value = s; o.textContent = s;
@@ -150,6 +156,38 @@ function closeFocus() {
   $("focus").classList.add("hidden"); focusItem = null; focusState = null;
 }
 
+// --- Note editor (markdown body + live preview) ---
+let noteItem = null;
+let notePreviewTimer = null;
+
+function openNoteEditor(item) {
+  noteItem = item;
+  $("noteTitle").textContent = item.text;
+  $("noteBody").value = item.body || "";
+  $("noteEditor").classList.remove("hidden");
+  updateNotePreview();
+}
+
+function closeNoteEditor() {
+  $("noteEditor").classList.add("hidden");
+  noteItem = null;
+}
+
+async function saveNoteBody() {
+  if (!noteItem) return;
+  await api(`/api/items/${noteItem.id}/body`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: $("noteBody").value }) });
+  closeNoteEditor();
+  loadView();
+}
+
+function updateNotePreview() {
+  clearTimeout(notePreviewTimer);
+  notePreviewTimer = setTimeout(async () => {
+    const r = await api("/api/md/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: $("noteBody").value }) });
+    $("notePreview").innerHTML = r.html || "<span class='muted'>—</span>";
+  }, 300);
+}
+
 // --- OCR dropzone ---
 const dz = $("dropzone");
 ["dragover", "dragenter"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("over"); }));
@@ -171,8 +209,9 @@ dz.addEventListener("drop", async e => {
 });
 
 // --- Hotkeys ---
+$("noteBody").addEventListener("input", updateNotePreview);
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") { closeFocus(); return; }
+  if (e.key === "Escape") { closeFocus(); closeNoteEditor(); return; }
   const typing = document.activeElement && document.activeElement.tagName === "INPUT";
   if (e.key === "Enter" && document.activeElement === $("captureInput")) { doCapture(); return; }
   if (typing) return;

@@ -52,6 +52,28 @@ class TestDigest:
         assert d["tasks"] >= 1
 
 
+class TestNoteBody:
+    def test_save_and_read_body(self, client):
+        item = client.post("/api/capture", json={"text": "ідея для поста"}).json()
+        r = client.put(f"/api/items/{item['id']}/body",
+                       json={"body": "# Заголовок\n- пункт"})
+        assert r.status_code == 200
+        assert r.json()["body"] == "# Заголовок\n- пункт"
+        items = client.get("/api/items").json()
+        assert items[0]["body"].startswith("# Заголовок")
+
+    def test_md_preview_renders(self, client):
+        r = client.post("/api/md/preview", json={"body": "**жирний**"}).json()
+        assert "<strong>жирний</strong>" in r["html"]
+
+    def test_md_preview_escapes_html(self, client):
+        r = client.post("/api/md/preview", json={"body": "<script>x</script>"}).json()
+        assert "<script>" not in r["html"]
+
+    def test_body_missing_404(self, client):
+        assert client.put("/api/items/99999/body", json={"body": "x"}).status_code == 404
+
+
 class TestRecurring:
     def test_set_recurrence_and_complete_spawns_next(self, client):
         item = client.post("/api/capture", json={"text": "винести сміття"}).json()
