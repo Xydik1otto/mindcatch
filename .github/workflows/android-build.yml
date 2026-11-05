@@ -3,7 +3,7 @@ name: android-build
 # Збірка debug-APK на кожен push; attach до Release на тег (v*).
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, mobile/android-ios]
     tags: ['v*']
   pull_request:
   workflow_dispatch:

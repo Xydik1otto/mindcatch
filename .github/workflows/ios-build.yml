@@ -5,7 +5,7 @@ name: ios-build
 # Встановлення: AltStore/Sideloadly пер-signed .app при установці (7 днів).
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, mobile/android-ios]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
