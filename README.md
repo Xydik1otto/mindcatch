@@ -2,9 +2,11 @@
 
 ![CI](https://github.com/bigpi/mindcatch/actions/workflows/tests.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-0.4.0-purple.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-purple.svg)
 
 Offline-first «виловлювач думок»: одне велике поле → задача, нуль тертя.
+
+> English docs: [README.en.md](README.en.md). Мова інтерфейсу перемикається в застосунку (кнопка вгорі або клавіша <kbd>L</kbd>).
 
 ## Чому це існує
 
