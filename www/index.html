@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Mindcatch</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #1a1625; color: #eee9f7;
+    }
+    .card { width: min(420px, 88vw); text-align: center; padding: 24px; }
+    .logo { font-size: 44px; }
+    h1 { margin: 8px 0 4px; font-size: 26px; }
+    p.sub { margin: 0 0 24px; opacity: .75; font-size: 14px; line-height: 1.5; }
+    input {
+      width: 100%; padding: 14px 16px; font-size: 16px; border-radius: 12px;
+      border: 1px solid #4a3f6b; background: #241d33; color: inherit; outline: none;
+    }
+    input:focus { border-color: #8b6ff0; }
+    button {
+      width: 100%; margin-top: 12px; padding: 14px; font-size: 16px; font-weight: 600;
+      border: 0; border-radius: 12px; background: #8b6ff0; color: #fff; cursor: pointer;
+    }
+    button:disabled { opacity: .6; }
+    .msg { min-height: 20px; margin-top: 12px; font-size: 13px; }
+    .msg.err { color: #ff8f8f; }
+    .msg.ok { color: #8fe3a2; }
+    .hint { margin-top: 18px; font-size: 12px; opacity: .6; line-height: 1.5; }
+    a { color: #b9a6ff; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo">🧠</div>
+    <h1>Mindcatch</h1>
+    <p class="sub" id="sub"></p>
+    <input id="server" type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button id="go" type="button"></button>
+    <div class="msg" id="msg"></div>
+    <p class="hint" id="hint"></p>
+  </main>
+  <script src="shell.js"></script>
+</body>
+</html>

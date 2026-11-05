@@ -1,0 +1,26 @@
+{
+  "name": "mindcatch",
+  "version": "1.0.0",
+  "description": "![CI](https://github.com/bigpi/mindcatch/actions/workflows/tests.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) ![Version](https://img.shields.io/badge/version-1.0.0-purple.svg)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/cli": "^6.2.3",
+    "@capacitor/core": "^6.2.3",
+    "@capacitor/ios": "^6.2.3",
+    "@capacitor/preferences": "^6.0.4"
+  },
+  "devDependencies": {
+    "typescript": "5.4"
+  }
+}
