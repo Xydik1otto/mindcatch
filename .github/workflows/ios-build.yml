@@ -48,6 +48,11 @@ jobs:
       - name: Zip .app for AltStore/Sideloadly
         run: |
           cd ios/build/Build/Products/Debug-iphoneos
+          ls -la
+          # xcodebuild product is App.app (PRODUCT_NAME = $(TARGET_NAME) = 'App');
+          # rename to Mindcatch.app for a friendly artifact name.
+          rm -rf Mindcatch.app
+          cp -R App.app Mindcatch.app
           zip -qry Mindcatch.app.zip Mindcatch.app
 
       - name: Upload .app zip artifact (30 days)
