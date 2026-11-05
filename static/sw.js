@@ -4,8 +4,8 @@
 // - static assets: cache-first, refreshed in the background (stale-while-revalidate)
 // - /api/*: never cached (live data only)
 
-const CACHE = "mindcatch-v3";
-const SHELL = ["/", "/index.html", "/app.js", "/manifest.json", "/favicon.svg"];
+const CACHE = "mindcatch-v4";
+const SHELL = ["/", "/index.html", "/app.js", "/i18n.json", "/manifest.json", "/favicon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

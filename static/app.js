@@ -10,6 +10,46 @@ let focusTimer = null;
 let focusItem = null;
 let focusState = null; // {phase, remaining, running}
 
+// --- i18n: UA/EN dictionaries (/i18n.json), browser auto-detect, persisted ---
+const LANG_KEY = "mc_lang";
+let LANG = localStorage.getItem(LANG_KEY) ||
+  ((navigator.language || "").toLowerCase().startsWith("uk") ? "ua" : "en");
+let DICT = { ua: {}, en: {} };
+
+function t(key, vars) {
+  let s = (DICT[LANG] && DICT[LANG][key]) ?? DICT.ua[key] ?? key;
+  if (vars) for (const k of Object.keys(vars)) s = s.split("{" + k + "}").join(String(vars[k]));
+  return s;
+}
+
+function applyStatic() {
+  document.documentElement.lang = LANG === "ua" ? "uk" : "en";
+  $("subline").innerHTML = t("sub");
+  $("captureInput").placeholder = t("capture_ph");
+  $("searchInput").placeholder = t("search_ph");
+  const ib = $("installBtn"); if (ib) ib.textContent = t("install");
+  $("dropzone").textContent = t("dropzone");
+  $("noteSave").textContent = t("save");
+  $("noteClose").textContent = t("close");
+  const lb = $("langBtn");
+  if (lb) { lb.textContent = LANG === "ua" ? "EN" : "UA"; lb.setAttribute("aria-label", t("lang_btn_aria")); }
+}
+
+async function loadI18n() {
+  try { DICT = await (await fetch("/i18n.json")).json(); }
+  catch (e) { /* offline first paint: HTML keeps Ukrainian defaults */ }
+  if (!DICT[LANG]) LANG = "ua";
+  applyStatic();
+}
+
+function setLang(lang) {
+  if (!DICT[lang]) return;
+  LANG = lang;
+  localStorage.setItem(LANG_KEY, LANG);
+  applyStatic();
+  loadView(); // re-render dynamic strings in the new language
+}
+
 async function api(path, opts) {
   const r = await fetch(path, opts);
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || r.statusText); }
@@ -45,7 +85,7 @@ async function checkReminders() {
     const d = await api("/api/digest");
     // digest line
     const el = $("digest");
-    if (el) el.textContent = `Сьогодні: ${d.tasks} задач, ${d.reminders} нагадувань`;
+    if (el) el.textContent = t("digest", { tasks: d.tasks, reminders: d.reminders });
     // reset the notified set on a new day
     if (notifiedDay !== d.date) { notifiedDay = d.date; notifiedToday = new Set(); }
     for (const it of d.due_today) {
@@ -73,7 +113,7 @@ async function loadTagChips() {
     c.onclick = () => { tagFilter = active ? "" : tag; loadView(); };
     box.appendChild(c);
   };
-  mk("все", "", !tagFilter);
+  mk(t("tag_all"), "", !tagFilter);
   for (const s of sug) {
     mk(`#${s.tag} (${s.count})`, s.tag, tagFilter === s.tag);
     const o = document.createElement("option"); o.value = s.tag; dl.appendChild(o);
@@ -91,7 +131,7 @@ async function loadView() {
   const items = await api("/api/items?status=" + view + tagQ);
   const el = $("list");
   el.innerHTML = "";
-  if (!items.length) { el.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
+  if (!items.length) { el.innerHTML = `<p class='muted'>${t("empty")}</p>`; return; }
   renderItems(items, el);
 }
 
@@ -100,17 +140,18 @@ function renderItems(items, el) {
     const div = document.createElement("div");
     div.className = "item";
     const statuses = ["inbox", "today", "week", "someday", "done"];
-    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + recUa(it.recurrence) : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t => "#" + escapeHtml(t)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
+    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + recName(it.recurrence) : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " " + t("min_short") : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t2 => "#" + escapeHtml(t2)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
     right.style.cssText = "display:flex;gap:6px;align-items:center";
     const rec = document.createElement("button");
-    rec.className = "ghost"; rec.title = "Повторення: немає → щоденна → щотижнева → будні → кожні N днів";
+    rec.className = "ghost"; rec.title = t("rec_btn_title");
     rec.textContent = "↻" + recLabel(it.recurrence);
+    rec.setAttribute("aria-label", t("rec_btn_title"));
     rec.onclick = async () => {
       const cycle = { "": "daily", "daily": "weekly", "weekly": "weekdays", "weekdays": "every" };
       let next = cycle[it.recurrence || ""] ?? "";
       if (next === "every") {
-        const n = parseInt(prompt("Кожні скільки днів? (2-365)", "3"), 10);
+        const n = parseInt(prompt(t("rec_prompt"), "3"), 10);
         if (!n || n < 2 || n > 365) return;
         next = "every:" + n;
       }
@@ -119,7 +160,7 @@ function renderItems(items, el) {
     };
     right.appendChild(rec);
     const tm = document.createElement("button");
-    tm.className = "ghost"; tm.textContent = "⏱"; tm.title = "Таймер: старт/стоп (історія на задачі)";
+    tm.className = "ghost"; tm.textContent = "⏱"; tm.title = t("timer_title");
     tm.onclick = async () => {
       try {
         const r = await api(`/api/items/${it.id}/timer/${tm.dataset.running ? "stop" : "start"}`, { method: "POST" });
@@ -130,17 +171,17 @@ function renderItems(items, el) {
     if (it.timer_running) tm.style.color = "var(--accent)";
     right.appendChild(tm);
     const cb = document.createElement("button");
-    cb.className = "ghost"; cb.textContent = "✓"; cb.title = "Виконано (повторювані створять наступний раз)";
+    cb.className = "ghost"; cb.textContent = "✓"; cb.title = t("done_title");
     cb.onclick = async () => { await api(`/api/items/${it.id}/complete`, { method: "POST" }); loadView(); };
     right.appendChild(cb);
     if (it.type === "note") {
       const nb = document.createElement("button");
-      nb.className = "ghost"; nb.textContent = "📝"; nb.title = "Редагувати нотатку (markdown)";
+      nb.className = "ghost"; nb.textContent = "📝"; nb.title = t("note_btn_title");
       nb.onclick = () => openNoteEditor(it);
       right.appendChild(nb);
     }
     const tb = document.createElement("button");
-    tb.className = "ghost"; tb.textContent = "🏷"; tb.title = "Теги/проєкт (підказки з історії)";
+    tb.className = "ghost"; tb.textContent = "🏷"; tb.title = t("tags_title");
     tb.onclick = () => { editingTags = editingTags === it.id ? null : it.id; loadView(); };
     right.appendChild(tb);
     const sel = document.createElement("select");
@@ -162,7 +203,7 @@ function renderItems(items, el) {
       div.style.flexWrap = "wrap";
       const ed = document.createElement("div");
       ed.className = "tagedit";
-      ed.innerHTML = `<input id="tagInput" list="tagDatalist" placeholder="теги/проєкти через кому" value="${escapeHtml(it.tags || "")}">`;
+      ed.innerHTML = `<input id="tagInput" list="tagDatalist" placeholder="${t("tags_ph")}" value="${escapeHtml(it.tags || "")}">`;
       const save = document.createElement("button"); save.textContent = "OK"; save.title = "Зберегти теги";
       save.onclick = async () => {
         await api(`/api/items/${it.id}/tags`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tags: $("tagInput").value }) });
@@ -181,17 +222,17 @@ function escapeHtml(s) { const d = document.createElement("div"); d.textContent 
 
 // Recurrence labels: short badge on the ↻ button + full label on the item line
 function recLabel(r) {
-  if (r === "daily") return "1";
-  if (r === "weekly") return "7";
-  if (r === "weekdays") return "пн-пт";
-  if (r && r.startsWith("every:")) return r.slice(6) + "д";
+  if (r === "daily") return t("rec_b_daily");
+  if (r === "weekly") return t("rec_b_weekly");
+  if (r === "weekdays") return t("rec_b_weekdays");
+  if (r && r.startsWith("every:")) return t("rec_b_every", { n: r.slice(6) });
   return "";
 }
-function recUa(r) {
-  if (r === "daily") return "щоденна";
-  if (r === "weekly") return "щотижнева";
-  if (r === "weekdays") return "будні";
-  if (r && r.startsWith("every:")) return "кожні " + r.slice(6) + " дн";
+function recName(r) {
+  if (r === "daily") return t("rec_daily");
+  if (r === "weekly") return t("rec_weekly");
+  if (r === "weekdays") return t("rec_weekdays");
+  if (r && r.startsWith("every:")) return t("rec_every", { n: r.slice(6) });
   return r;
 }
 
@@ -200,14 +241,14 @@ async function loadReview() {
   const r = await api("/api/review/weekly");
   const el = $("list");
   el.innerHTML = `
-    <p class="muted">Тиждень ${r.week_start} … ${r.today}: виконано ${r.counts.done}, перенеслось ${r.counts.carried}, створено ${r.counts.created_this_week}</p>
-    <h3 style="margin:10px 0 6px">✅ Зроблено цього тижня (${r.counts.done})</h3>
+    <p class="muted">${t("review_summary", { week_start: r.week_start, today: r.today, done: r.counts.done, carried: r.counts.carried, created: r.counts.created_this_week })}</p>
+    <h3 style="margin:10px 0 6px">${t("review_done", { n: r.counts.done })}</h3>
     <div id="reviewDone"></div>
-    <h3 style="margin:10px 0 6px">⏳ Перенеслось (${r.counts.carried})</h3>
+    <h3 style="margin:10px 0 6px">${t("review_carried", { n: r.counts.carried })}</h3>
     <div id="reviewCarried"></div>`;
   const fill = (container, arr) => {
     const box = $(container);
-    if (!arr.length) { box.innerHTML = "<p class='muted'>Порожньо.</p>"; return; }
+    if (!arr.length) { box.innerHTML = `<p class='muted'>${t("empty")}</p>`; return; }
     for (const it of arr) {
       const div = document.createElement("div");
       div.className = "item";
@@ -246,8 +287,8 @@ async function loadSearch(q) {
   $("tagChips").style.display = "none";
   const items = await api("/api/search?q=" + encodeURIComponent(q));
   const el = $("list");
-  if (!items.length) { el.innerHTML = "<p class='muted'>Нічого не знайдено.</p>"; return; }
-  el.innerHTML = `<p class="muted">Знайдено ${items.length} за запитом «${escapeHtml(q)}»:</p>`;
+  if (!items.length) { el.innerHTML = `<p class='muted'>${t("nothing")}</p>`; return; }
+  el.innerHTML = `<p class="muted">${t("found", { n: items.length, q: escapeHtml(q) })}</p>`;
   renderItems(items, el);
 }
 
@@ -257,9 +298,9 @@ async function loadStats() {
   const s = await api("/api/stats/focus?days=7");
   const h = Math.round(s.total_minutes / 60);
   $("list").innerHTML =
-    `<h3 style="margin:6px 0 10px">📊 Фокус за 7 днів: ${s.total_minutes} хв${h ? ` (~${h} год)` : ""}</h3>` +
+    `<h3 style="margin:6px 0 10px">${t("stats_head", { minutes: s.total_minutes })}${h ? " " + t("stats_hours", { hours: h }) : ""}</h3>` +
     s.svg +
-    `<p class="muted" style="margin-top:8px">Хвилини закритих фокус-сесій (pomodoro/таймер) по днях. Запущений таймер врахується, коли зупините.</p>`;
+    `<p class="muted" style="margin-top:8px">${t("stats_note")}</p>`;
 }
 
 // --- Focus mode (pomodoro 25/5) ---
@@ -288,7 +329,7 @@ function focusTick() {
 function updateFocusUI() {
   const m = Math.floor(focusState.remaining / 60), s = focusState.remaining % 60;
   $("focusTimer").textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` + (focusState.phase === "work" ? "" : " ☕");
-  $("focusBtn").textContent = focusState.running ? "Пауза" : "Продовжити";
+  $("focusBtn").textContent = focusState.running ? t("pause") : t("resume");
 }
 
 function focusAction() {
@@ -336,12 +377,9 @@ function updateNotePreview() {
 // --- Onboarding tour: 3 tips on the first visit (localStorage) ---
 const TOUR_KEY = "mc_tour_done";
 const TOUR_STEPS = [
-  { sel: "#captureInput", title: "1. Вилов думок",
-    text: "Одне поле — одна думка. Введіть текст і натисніть Enter: дата («завтра 15:00»), тип і #теги розпізнаються самі." },
-  { sel: "nav", title: "2. Триаж без роздумів",
-    text: "Розкладіть по полицях: Inbox → Today → Week → Someday. На задачах: ↻ повторення, ⏱ таймер, ✓ виконано." },
-  { sel: ".sub", title: "3. Дані — ваші",
-    text: "Все зберігається локально. Експорт у один клік: JSON (клавіша E), календар (ICS) і Todoist/Markdown." },
+  { sel: "#captureInput", title: "tour1_title", text: "tour1_text" },
+  { sel: "nav", title: "tour2_title", text: "tour2_text" },
+  { sel: ".sub", title: "tour3_title", text: "tour3_text" },
 ];
 let tourIdx = 0;
 
@@ -350,10 +388,11 @@ function tourShow() {
   document.querySelectorAll(".tour-hl").forEach(el => el.classList.remove("tour-hl"));
   const target = document.querySelector(step.sel);
   if (target) target.classList.add("tour-hl");
-  $("tourStep").textContent = `Крок ${tourIdx + 1} з ${TOUR_STEPS.length}`;
-  $("tourTitle").textContent = step.title;
-  $("tourText").textContent = step.text;
-  $("tourNext").textContent = tourIdx === TOUR_STEPS.length - 1 ? "Готово" : "Далі →";
+  $("tourStep").textContent = t("tour_step", { n: tourIdx + 1, total: TOUR_STEPS.length });
+  $("tourTitle").textContent = t(step.title);
+  $("tourText").textContent = t(step.text);
+  $("tourNext").textContent = tourIdx === TOUR_STEPS.length - 1 ? t("tour_finish") : t("tour_next");
+  $("tourSkip").textContent = t("tour_skip");
   $("tour").classList.remove("hidden");
   $("tourNext").focus();
 }
@@ -396,11 +435,11 @@ const dz = $("dropzone");
 ["dragleave", "drop"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("over"); }));
 dz.addEventListener("drop", async e => {
   const f = e.dataTransfer.files[0]; if (!f) return;
-  dz.textContent = "Обробка…";
+  dz.textContent = t("dropzone_busy");
   const fd = new FormData(); fd.append("file", f);
   const res = await api("/api/ocr", { method: "POST", body: fd });
-  if (!res.ocr_available) { dz.textContent = res.message + " (Перетягніть скріншот або введіть текст вручну)"; return; }
-  dz.textContent = `Знайдено ${res.candidates.length} кандидатів`;
+  if (!res.ocr_available) { dz.textContent = t("ocr_fallback"); return; }
+  dz.textContent = t("dropzone_found", { n: res.candidates.length });
   for (const c of res.candidates.slice(0, 10)) {
     const div = document.createElement("div"); div.className = "item";
     div.innerHTML = `<div><div class="type">candidate · score ${c.score}</div><div>${escapeHtml(c.text)}</div></div>`;
@@ -425,9 +464,10 @@ document.addEventListener("keydown", e => {
   else if (e.key === "f" || e.key === "F") {
     const first = document.querySelector("#list .item");
     if (first && view === "today") { /* open focus on first item */ }
-    else alert("Focus доступний для задач у Today");
+    else alert(t("focus_alert"));
   }
   else if (e.key === "e" || e.key === "E") { location.href = "/api/export"; }
+  else if (e.key === "l" || e.key === "L") { setLang(LANG === "ua" ? "en" : "ua"); }
 });
 
 // --- Service worker registration (offline shell) ---
@@ -437,6 +477,11 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-loadView();
-checkReminders();
-maybeStartTour();
+$("langBtn").onclick = () => setLang(LANG === "ua" ? "en" : "ua");
+
+(async function init() {
+  await loadI18n();
+  loadView();
+  checkReminders();
+  maybeStartTour();
+})();

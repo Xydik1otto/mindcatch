@@ -53,8 +53,8 @@
 </style>
 </head>
 <body>
-<h1>Mindcatch <button id="installBtn" class="ghost" style="display:none;font-size:.75rem;padding:6px 10px;vertical-align:middle" onclick="installApp()">⬇ Встановити застосунок</button></h1>
-<p class="sub">Одне поле — одна думка. <kbd>N</kbd> — новийcapture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export</p>
+<h1>Mindcatch <button id="langBtn" class="ghost" style="font-size:.75rem;padding:6px 10px;vertical-align:middle" aria-label="Змінити мову інтерфейсу">EN</button> <button id="installBtn" class="ghost" style="display:none;font-size:.75rem;padding:6px 10px;vertical-align:middle" onclick="installApp()">⬇ Встановити застосунок</button></h1>
+<p class="sub" id="subline">Одне поле — одна думка. <kbd>N</kbd> — новий capture, <kbd>T</kbd> — Today, <kbd>F</kbd> — focus, <kbd>E</kbd> — export</p>
 
 <div class="dropzone" id="dropzone">Перетягніть скріншот сюди (OCR, якщо Tesseract встановлений)</div>
 
@@ -89,8 +89,8 @@
     <div id="notePreview" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto"></div>
   </div>
   <div style="display:flex;gap:10px">
-    <button onclick="saveNoteBody()">Зберегти</button>
-    <button class="ghost" onclick="closeNoteEditor()">Закрити (Esc)</button>
+    <button id="noteSave" onclick="saveNoteBody()">Зберегти</button>
+    <button id="noteClose" class="ghost" onclick="closeNoteEditor()">Закрити (Esc)</button>
   </div>
 </div>
 
