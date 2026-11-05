@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Додано
+- **Мобільні порти (Capacitor 6)**: Android (minSdk 24, targetSdk 35,
+  sideload APK з Releases) та iOS 14 (unsigned збірка через
+  AltStore/Sideloadly). Splash-екран з полем «Адреса сервера» (збереження в
+  Preferences); CI-збірки `android-build.yml` / `ios-build.yml` (артефакти
+  30 днів, attach до Release на тег). Гайд — [MOBILE.md](MOBILE.md).
+
 ### Видалено
 - Removed: monetization scaffolding — `.github/FUNDING.yml`, секція «Монетизація»
   з PLAN.md, згадки one-time purchase/Pro з README (100% free OSS).

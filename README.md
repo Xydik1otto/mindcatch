@@ -134,6 +134,15 @@ mindcatch/
 - ~~v1.0 (зараз)~~: ICS-календар, every-N/weekdays повторення, Todoist/Markdown експорт, onboarding tour, i18n UA/EN, INSTALL.md + packaging, a11y, open-source hygiene.
 - **Далі**: шаблони ранкової розгінки, інсталятор Windows exe (див. PLAN.md).
 
+## Мобільні застосунки (Android / iOS)
+
+Capacitor 6-оболонка, яка підключається до **свого сервера**: адреса вводиться
+на splash-екрані при першому запуску і зберігається в пристрої. Android —
+sideload APK з [Releases](https://github.com/bigpi/mindcatch/releases)
+(повністю безкоштовно); iOS — unsigned збірка через AltStore/Sideloadly
+(App Store потребує Apple Developer $99/рік — не в бюджеті). Віддалений
+доступ — Tailscale/WireGuard. Деталі: [MOBILE.md](MOBILE.md).
+
 ## Contributing
 
 PRs вітаються! Дивіться [CONTRIBUTING.md](CONTRIBUTING.md) (правила, чекліст

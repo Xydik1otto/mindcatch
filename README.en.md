@@ -140,6 +140,15 @@ mindcatch/
 - ~~v1.0 (current)~~: ICS calendar export, every-N-days & weekdays-only recurrence, Todoist/Markdown export, onboarding tour, UA/EN switcher, INSTALL.md + packaging, a11y pass.
 - **Next**: morning-ramp templates, Windows exe installer (see PLAN.md).
 
+## Mobile apps (Android / iOS)
+
+A Capacitor 6 shell that connects to **your own server**: you enter the
+address on the splash screen at first launch and it is stored on the device.
+Android — sideload the APK from [Releases](https://github.com/bigpi/mindcatch/releases)
+(fully free); iOS — unsigned build via AltStore/Sideloadly (the App Store
+requires Apple Developer at $99/year — not in the budget). Remote access via
+Tailscale/WireGuard. Details: [MOBILE.md](MOBILE.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
