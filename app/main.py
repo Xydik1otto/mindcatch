@@ -14,7 +14,8 @@ from .db import (all_time_logs, create_item, export_all, get_conn, get_item,
                  init_db, list_items, search_items, start_timer, stop_timer,
                  timer_state, update_fields, update_status)
 from .logic import (date_parser, digest, focus_stats, ics_export, markdown,
-                    ocr_extract, recurring, review, tags, time_tracker, triage)
+                    ocr_extract, recurring, review, tags, task_export,
+                    time_tracker, triage)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -302,6 +303,24 @@ def export_ics(db=DbDep):
     return Response(ics, media_type="text/calendar; charset=utf-8",
                     headers={"Content-Disposition":
                              "attachment; filename=mindcatch.ics"})
+
+
+@app.get("/api/export/todoist.md")
+def export_todoist(db=DbDep):
+    """Tasks as a Todoist-compatible Markdown checklist (paste into Todoist)."""
+    md = task_export.to_todoist(list_items(db))
+    return Response(md, media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition":
+                             "attachment; filename=mindcatch-todoist.md"})
+
+
+@app.get("/api/export/markdown")
+def export_markdown(db=DbDep):
+    """All items grouped by status as a Markdown document."""
+    md = task_export.to_markdown(list_items(db))
+    return Response(md, media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition":
+                             "attachment; filename=mindcatch.md"})
 
 
 @app.get("/api/export")
