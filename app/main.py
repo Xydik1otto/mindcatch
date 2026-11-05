@@ -174,7 +174,7 @@ def md_preview(body: BodyIn):
 
 @app.post("/api/items/{item_id}/recurrence")
 def set_recurrence(item_id: int, body: RecurrenceIn, db=DbDep):
-    """Set daily/weekly recurrence (None = one-off)."""
+    """Set recurrence: None | daily | weekly | every:N | weekdays."""
     item = get_item(db, item_id)
     if not item:
         raise HTTPException(404, "item not found")

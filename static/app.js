@@ -100,15 +100,20 @@ function renderItems(items, el) {
     const div = document.createElement("div");
     div.className = "item";
     const statuses = ["inbox", "today", "week", "someday", "done"];
-    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + (it.recurrence === "daily" ? "щоденна" : "щотижнева") : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t => "#" + escapeHtml(t)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
+    div.innerHTML = `<div><div class="type">${it.type}${it.recurrence ? " · " + recUa(it.recurrence) : ""}${it.estimate_minutes ? " · ⏱ " + (it.spent_minutes || 0) + "/" + it.estimate_minutes + " хв" : ""}${it.due_date ? " · 📅 " + it.due_date : ""}${tagList(it).length ? " · " + tagList(it).map(t => "#" + escapeHtml(t)).join(" ") : ""}</div><div>${escapeHtml(it.text)}</div></div>`;
     const right = document.createElement("div");
     right.style.cssText = "display:flex;gap:6px;align-items:center";
     const rec = document.createElement("button");
-    rec.className = "ghost"; rec.title = "Повторення: немає → щоденна → щотижнева";
-    rec.textContent = "↻" + (it.recurrence === "daily" ? "1" : it.recurrence === "weekly" ? "7" : "");
+    rec.className = "ghost"; rec.title = "Повторення: немає → щоденна → щотижнева → будні → кожні N днів";
+    rec.textContent = "↻" + recLabel(it.recurrence);
     rec.onclick = async () => {
-      const cycle = { "": "daily", "daily": "weekly", "weekly": "" };
-      const next = cycle[it.recurrence || ""] ?? "daily";
+      const cycle = { "": "daily", "daily": "weekly", "weekly": "weekdays", "weekdays": "every" };
+      let next = cycle[it.recurrence || ""] ?? "";
+      if (next === "every") {
+        const n = parseInt(prompt("Кожні скільки днів? (2-365)", "3"), 10);
+        if (!n || n < 2 || n > 365) return;
+        next = "every:" + n;
+      }
       await api(`/api/items/${it.id}/recurrence`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recurrence: next || null }) });
       loadView();
     };
@@ -173,6 +178,22 @@ function renderItems(items, el) {
 }
 
 function escapeHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// Recurrence labels: short badge on the ↻ button + full label on the item line
+function recLabel(r) {
+  if (r === "daily") return "1";
+  if (r === "weekly") return "7";
+  if (r === "weekdays") return "пн-пт";
+  if (r && r.startsWith("every:")) return r.slice(6) + "д";
+  return "";
+}
+function recUa(r) {
+  if (r === "daily") return "щоденна";
+  if (r === "weekly") return "щотижнева";
+  if (r === "weekdays") return "будні";
+  if (r && r.startsWith("every:")) return "кожні " + r.slice(6) + " дн";
+  return r;
+}
 
 // --- Weekly review view ---
 async function loadReview() {

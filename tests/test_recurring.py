@@ -1,10 +1,29 @@
-"""Recurring tasks: daily/weekly spawn logic."""
+"""Recurring tasks: daily/weekly/every:N/weekdays spawn logic."""
 
+import os
+import tempfile
 from datetime import date
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.logic.recurring import next_date, spawn_next, validate
+
+_TMP = tempfile.mkdtemp(prefix="mindcatch-rec-")
+os.environ["MINDCATCH_DB"] = os.path.join(_TMP, "test.db")
+
+from app.main import app  # noqa: E402  (env must be set before import)
+
+
+@pytest.fixture()
+def client():
+    db_path = os.environ["MINDCATCH_DB"]
+    for suffix in ("", "-wal", "-shm"):
+        p = db_path + suffix
+        if os.path.exists(p):
+            os.remove(p)
+    with TestClient(app) as c:
+        yield c
 
 
 def _item(**kw):
@@ -40,6 +59,82 @@ class TestNextDate:
 
     def test_weekly_year_rollover(self):
         assert next_date(date(2026, 12, 28), "weekly") == date(2027, 1, 4)
+
+
+class TestEveryNDays:
+    def test_validate_accepts_every_n(self):
+        assert validate("every:3") == "every:3"
+        assert validate("every:30") == "every:30"
+
+    def test_validate_rejects_bad_every(self):
+        with pytest.raises(ValueError):
+            validate("every:1")   # use 'daily' instead
+        with pytest.raises(ValueError):
+            validate("every:abc")
+        with pytest.raises(ValueError):
+            validate("every:")
+
+    def test_next_date_plus_n(self):
+        assert next_date(date(2026, 11, 5), "every:3") == date(2026, 11, 8)
+
+    def test_next_date_month_rollover(self):
+        assert next_date(date(2026, 11, 30), "every:3") == date(2026, 12, 3)
+
+    def test_spawn_shifts_due_date(self):
+        nxt = spawn_next(_item(recurrence="every:14", due_date="2026-11-05"))
+        assert nxt["due_date"] == "2026-11-19"
+        assert nxt["recurrence"] == "every:14"
+
+    def test_spawn_shifts_remind_at_preserving_time(self):
+        nxt = spawn_next(_item(recurrence="every:2", remind_at="2026-11-05T08:30:00"))
+        assert nxt["remind_at"] == "2026-11-07T08:30:00"
+
+
+class TestWeekdaysOnly:
+    def test_friday_skips_to_monday(self):
+        # 2026-11-06 is a Friday
+        assert date(2026, 11, 6).weekday() == 4
+        assert next_date(date(2026, 11, 6), "weekdays") == date(2026, 11, 9)
+
+    def test_monday_to_tuesday(self):
+        assert next_date(date(2026, 11, 9), "weekdays") == date(2026, 11, 10)
+
+    def test_thursday_to_friday(self):
+        assert next_date(date(2026, 11, 5), "weekdays") == date(2026, 11, 6)
+
+    def test_weekend_input_skips_to_monday(self):
+        assert next_date(date(2026, 11, 7), "weekdays") == date(2026, 11, 9)  # Sat
+        assert next_date(date(2026, 11, 8), "weekdays") == date(2026, 11, 9)  # Sun
+
+    def test_spawn_weekdays(self):
+        nxt = spawn_next(_item(recurrence="weekdays", due_date="2026-11-06"))
+        assert nxt["due_date"] == "2026-11-09"
+
+    def test_rrule_for_calendar_export(self):
+        from app.logic.recurring import rrule
+        assert rrule("weekdays") == "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+        assert rrule("every:3") == "FREQ=DAILY;INTERVAL=3"
+
+
+class TestApi:
+    def test_set_every_n_and_complete_spawns_next(self, client):
+        item = client.post("/api/capture", json={"text": "винести сміття"}).json()
+        r = client.post(f"/api/items/{item['id']}/recurrence",
+                        json={"recurrence": "every:5"})
+        assert r.status_code == 200
+        assert r.json()["recurrence"] == "every:5"
+
+    def test_invalid_every_n_400(self, client):
+        item = client.post("/api/capture", json={"text": "x"}).json()
+        r = client.post(f"/api/items/{item['id']}/recurrence",
+                        json={"recurrence": "every:1"})
+        assert r.status_code == 400
+
+    def test_set_weekdays(self, client):
+        item = client.post("/api/capture", json={"text": "перевірити пошту"}).json()
+        r = client.post(f"/api/items/{item['id']}/recurrence",
+                        json={"recurrence": "weekdays"})
+        assert r.json()["recurrence"] == "weekdays"
 
 
 class TestSpawnNext:

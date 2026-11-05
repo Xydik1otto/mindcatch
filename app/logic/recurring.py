@@ -1,30 +1,69 @@
-"""Recurring tasks: daily / weekly.
+"""Recurring tasks: daily / weekly / every-N-days / weekdays-only.
 
 Pure logic: given a completed item, produce the next occurrence (same text,
 type and recurrence; remind_at/due_date shifted forward; back to inbox).
+
+Recurrence strings:
+  - ``daily``    — every day
+  - ``weekly``   — every 7 days
+  - ``every:N``  — every N days (N >= 2)
+  - ``weekdays`` — Monday..Friday only (skips weekends)
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
-RECURRENCES = ("daily", "weekly")
+RECURRENCES = ("daily", "weekly", "weekdays")
 
 
 def validate(recurrence: str | None) -> str | None:
     if recurrence is None or recurrence == "":
         return None
-    if recurrence not in RECURRENCES:
-        raise ValueError(f"unknown recurrence: {recurrence} (use daily|weekly)")
-    return recurrence
+    if recurrence in RECURRENCES:
+        return recurrence
+    if recurrence.startswith("every:"):
+        try:
+            n = int(recurrence.split(":", 1)[1])
+        except ValueError:
+            raise ValueError(
+                f"unknown recurrence: {recurrence} (use daily|weekly|every:N|weekdays)")
+        if n < 2:
+            raise ValueError("every:N needs N >= 2 (use 'daily' for every day)")
+        return recurrence
+    raise ValueError(
+        f"unknown recurrence: {recurrence} (use daily|weekly|every:N|weekdays)")
 
 
 def next_date(d: date, recurrence: str) -> date:
-    """Next occurrence date after ``d``."""
+    """Next occurrence date strictly after ``d``."""
     validate(recurrence)
     if recurrence == "daily":
         return d + timedelta(days=1)
-    return d + timedelta(days=7)  # weekly
+    if recurrence == "weekly":
+        return d + timedelta(days=7)
+    if recurrence == "weekdays":
+        nxt = d + timedelta(days=1)
+        while nxt.weekday() >= 5:  # Sat=5, Sun=6
+            nxt += timedelta(days=1)
+        return nxt
+    # every:N (validated above)
+    return d + timedelta(days=int(recurrence.split(":", 1)[1]))
+
+
+def rrule(recurrence: str | None) -> str | None:
+    """RFC 5545 RRULE representation (for calendar exports)."""
+    if not recurrence:
+        return None
+    if recurrence == "daily":
+        return "FREQ=DAILY"
+    if recurrence == "weekly":
+        return "FREQ=WEEKLY"
+    if recurrence == "weekdays":
+        return "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+    if recurrence.startswith("every:"):
+        return f"FREQ=DAILY;INTERVAL={recurrence.split(':', 1)[1]}"
+    return None
 
 
 def _shift(iso: str | None, recurrence: str) -> str | None:

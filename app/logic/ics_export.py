@@ -39,22 +39,8 @@ def _dtstamp() -> str:
 
 def _rrule(recurrence: str | None) -> str | None:
     """Map our recurrence strings onto RFC 5545 RRULE (None = one-off)."""
-    if not recurrence:
-        return None
-    if recurrence == "daily":
-        return "FREQ=DAILY"
-    if recurrence == "weekly":
-        return "FREQ=WEEKLY"
-    if recurrence == "weekdays":
-        return "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
-    if recurrence.startswith("every:"):
-        try:
-            n = int(recurrence.split(":", 1)[1])
-        except ValueError:
-            return None
-        if n >= 2:
-            return f"FREQ=DAILY;INTERVAL={n}"
-    return None
+    from . import recurring
+    return recurring.rrule(recurrence)
 
 
 def _event_lines(item: dict, dtstamp: str) -> list[str]:
